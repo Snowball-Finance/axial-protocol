@@ -2,7 +2,7 @@
   "dependencies": {
     "@openzeppelin/contracts-upgradeable": "^3.4.2",
     "chalk": "^4.1.0",
-    "inquirer": "^7.3.3",
+    "inquirer": "^8.2.0",
     "node-fetch": "^2.6.1",
     "ora": "^5.1.0",
     "remixd": "^0.2.4-alpha.0",
