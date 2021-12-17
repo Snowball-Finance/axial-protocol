@@ -7,7 +7,7 @@ import "./MetaSwapUtils.sol";
 
 /**
  * @title MetaSwap - A StableSwap implementation in solidity.
- * @dev This contract is responsible for custody of closely pegged assets (eg. group of stablecoins)
+ * @notice This contract is responsible for custody of closely pegged assets (eg. group of stablecoins)
  * and automatic market making system. Users become an LP (Liquidity Provider) by depositing their tokens
  * in desired ratios for an exchange of the pool token that represents their share of the pool.
  * Users can burn pool tokens and withdraw their share of token(s).
@@ -48,7 +48,7 @@ contract MetaSwap is Swap {
     );
 
     /**
-     * @dev Get the virtual price, to help calculate profit
+     * @notice Get the virtual price, to help calculate profit
      * @return the virtual price, scaled to the POOL_PRECISION_DECIMALS
      */
     function getVirtualPrice()
@@ -62,7 +62,7 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @dev Calculate amount of tokens you receive on swap
+     * @notice Calculate amount of tokens you receive on swap
      * @param tokenIndexFrom the token the user wants to sell
      * @param tokenIndexTo the token the user wants to buy
      * @param dx the amount of tokens the user wants to sell. If the token charges
@@ -85,7 +85,7 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @dev Calculate amount of tokens you receive on swap. For this function,
+     * @notice Calculate amount of tokens you receive on swap. For this function,
      * the token indices are flattened out so that underlying tokens are represented.
      * @param tokenIndexFrom the token the user wants to sell
      * @param tokenIndexTo the token the user wants to buy
@@ -109,7 +109,7 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @dev A simple method to calculate prices from deposits or
+     * @notice A simple method to calculate prices from deposits or
      * withdrawals, excluding fees but including slippage. This is
      * helpful as an input into the various "min" parameters on calls
      * to fight front-running
@@ -140,7 +140,7 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @dev Calculate the amount of underlying token available to withdraw
+     * @notice Calculate the amount of underlying token available to withdraw
      * when withdrawing via only single token
      * @param tokenAmount the amount of LP token to burn
      * @param tokenIndex index of which token will be withdrawn
@@ -163,7 +163,7 @@ contract MetaSwap is Swap {
     /*** STATE MODIFYING FUNCTIONS ***/
 
     /**
-     * @dev This overrides Swap's initialize function to prevent initializing
+     * @notice This overrides Swap's initialize function to prevent initializing
      * without the address of the base Swap contract.
      *
      * @param _pooledTokens an array of ERC20s this pool will accept
@@ -190,7 +190,7 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @dev Initializes this MetaSwap contract with the given parameters.
+     * @notice Initializes this MetaSwap contract with the given parameters.
      * MetaSwap uses an existing Swap pool to expand the available liquidity.
      * _pooledTokens array should contain the base Swap pool's LP token as
      * the last element. For example, if there is a Swap pool consisting of
@@ -265,7 +265,7 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @dev Swap two tokens using this pool
+     * @notice Swap two tokens using this pool
      * @param tokenIndexFrom the token the user wants to swap from
      * @param tokenIndexTo the token the user wants to swap to
      * @param dx the amount of tokens the user wants to swap from
@@ -299,7 +299,7 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @dev Swap two tokens using this pool and the base pool.
+     * @notice Swap two tokens using this pool and the base pool.
      * @param tokenIndexFrom the token the user wants to swap from
      * @param tokenIndexTo the token the user wants to swap to
      * @param dx the amount of tokens the user wants to swap from
@@ -332,7 +332,7 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @dev Add liquidity to the pool with the given amounts of tokens
+     * @notice Add liquidity to the pool with the given amounts of tokens
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
@@ -362,7 +362,7 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @dev Remove liquidity from the pool all in one token. Withdraw fee that decays linearly
+     * @notice Remove liquidity from the pool all in one token. Withdraw fee that decays linearly
      * over period of 4 weeks since last deposit will apply.
      * @param tokenAmount the amount of the token you want to receive
      * @param tokenIndex the index of the token you want to receive
@@ -395,7 +395,7 @@ contract MetaSwap is Swap {
     }
 
     /**
-     * @dev Remove liquidity from the pool, weighted differently than the
+     * @notice Remove liquidity from the pool, weighted differently than the
      * pool's current balances. Withdraw fee that decays linearly
      * over period of 4 weeks since last deposit will apply.
      * @param amounts how much of each token to withdraw

@@ -12,7 +12,7 @@ import "../interfaces/IMetaSwap.sol";
 
 /**
  * @title MetaSwapDeposit
- * @dev This contract flattens the LP token in a MetaSwap pool for easier user access. MetaSwap must be
+ * @notice This contract flattens the LP token in a MetaSwap pool for easier user access. MetaSwap must be
  * deployed before this contract can be initialized successfully.
  *
  * For example, suppose there exists a base Swap pool consisting of [DAI, USDC, USDT].
@@ -46,7 +46,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Sets the address for the base Swap contract, MetaSwap contract, and the
+     * @notice Sets the address for the base Swap contract, MetaSwap contract, and the
      * MetaSwap LP token contract.
      * @param _baseSwap the address of the base Swap contract
      * @param _metaSwap the address of the MetaSwap contract
@@ -110,7 +110,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     // Mutative functions
 
     /**
-     * @dev Swap two underlying tokens using the meta pool and the base pool
+     * @notice Swap two underlying tokens using the meta pool and the base pool
      * @param tokenIndexFrom the token the user wants to swap from
      * @param tokenIndexTo the token the user wants to swap to
      * @param dx the amount of tokens the user wants to swap from
@@ -137,7 +137,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Add liquidity to the pool with the given amounts of tokens
+     * @notice Add liquidity to the pool with the given amounts of tokens
      * @param amounts the amounts of each token to add, in their native precision
      * @param minToMint the minimum LP tokens adding this amount of liquidity
      * should mint, otherwise revert. Handy for front-running mitigation
@@ -219,7 +219,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Burn LP tokens to remove liquidity from the pool. Withdraw fee that decays linearly
+     * @notice Burn LP tokens to remove liquidity from the pool. Withdraw fee that decays linearly
      * over period of 4 weeks since last deposit will apply.
      * @dev Liquidity can always be removed, even when the pool is paused.
      * @param amount the amount of LP tokens to burn
@@ -300,7 +300,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Remove liquidity from the pool all in one token. Withdraw fee that decays linearly
+     * @notice Remove liquidity from the pool all in one token. Withdraw fee that decays linearly
      * over period of 4 weeks since last deposit will apply.
      * @param tokenAmount the amount of the token you want to receive
      * @param tokenIndex the index of the token you want to receive
@@ -357,7 +357,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Remove liquidity from the pool, weighted differently than the
+     * @notice Remove liquidity from the pool, weighted differently than the
      * pool's current balances. Withdraw fee that decays linearly
      * over period of 4 weeks since last deposit will apply.
      * @param amounts how much of each token to withdraw
@@ -474,7 +474,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     // VIEW FUNCTIONS
 
     /**
-     * @dev A simple method to calculate prices from deposits or
+     * @notice A simple method to calculate prices from deposits or
      * withdrawals, excluding fees but including slippage. This is
      * helpful as an input into the various "min" parameters on calls
      * to fight front-running. When withdrawing from the base pool in imbalanced
@@ -516,7 +516,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev A simple method to calculate amount of each underlying
+     * @notice A simple method to calculate amount of each underlying
      * tokens that is returned upon burning given amount of LP tokens
      * @param amount the amount of LP tokens that would be burned on withdrawal
      * @return array of token balances that the user will receive
@@ -548,7 +548,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Calculate the amount of underlying token available to withdraw
+     * @notice Calculate the amount of underlying token available to withdraw
      * when withdrawing via only single token
      * @param tokenAmount the amount of LP token to burn
      * @param tokenIndex index of which token will be withdrawn
@@ -582,7 +582,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Returns the address of the pooled token at given index. Reverts if tokenIndex is out of range.
+     * @notice Returns the address of the pooled token at given index. Reverts if tokenIndex is out of range.
      * This is a flattened representation of the pooled tokens.
      * @param index the index of the token
      * @return address of the token at given index
@@ -593,7 +593,7 @@ contract MetaSwapDeposit is Initializable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Calculate amount of tokens you receive on swap
+     * @notice Calculate amount of tokens you receive on swap
      * @param tokenIndexFrom the token the user wants to sell
      * @param tokenIndexTo the token the user wants to buy
      * @param dx the amount of tokens the user wants to sell. If the token charges

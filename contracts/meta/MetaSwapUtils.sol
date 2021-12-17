@@ -11,7 +11,7 @@ import "../SwapUtils.sol";
 
 /**
  * @title MetaSwapUtils library
- * @dev A library to be used within MetaSwap.sol. Contains functions responsible for custody and AMM functionalities.
+ * @notice A library to be used within MetaSwap.sol. Contains functions responsible for custody and AMM functionalities.
  *
  * MetaSwap is a modified version of Swap that allows Swap's LP token to be utilized in pooling with other tokens.
  * As an example, if there is a Swap pool consisting of [DAI, USDC, USDT]. Then a MetaSwap pool can be created
@@ -136,7 +136,7 @@ library MetaSwapUtils {
     /*** VIEW & PURE FUNCTIONS ***/
 
     /**
-     * @dev Return the stored value of base Swap's virtual price. If
+     * @notice Return the stored value of base Swap's virtual price. If
      * value was updated past BASE_CACHE_EXPIRE_TIME, then read it directly
      * from the base Swap contract.
      * @param metaSwapStorage MetaSwap struct to read from
@@ -156,8 +156,16 @@ library MetaSwapUtils {
         return metaSwapStorage.baseVirtualPrice;
     }
 
+    function _getBaseSwapFee(ISwap baseSwap)
+        internal
+        view
+        returns (uint256 swapFee)
+    {
+        (, , , , swapFee, , ) = baseSwap.swapStorage();
+    }
+
     /**
-     * @dev Calculate how much the user would receive when withdrawing via single token
+     * @notice Calculate how much the user would receive when withdrawing via single token
      * @param self Swap struct to read from
      * @param metaSwapStorage MetaSwap struct to read from
      * @param tokenAmount the amount to withdraw in the pool's precision
@@ -213,7 +221,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev Calculate the dy of withdrawing in one token
+     * @notice Calculate the dy of withdrawing in one token
      * @param self Swap struct to read from
      * @param tokenIndex which token will be withdrawn
      * @param tokenAmount the amount to withdraw in the pools precision
@@ -279,6 +287,12 @@ library MetaSwapUtils {
 
         if (tokenIndex == xp.length.sub(1)) {
             dy = dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice);
+            v.newY = v.newY.mul(BASE_VIRTUAL_PRICE_PRECISION).div(
+                baseVirtualPrice
+            );
+            xp[tokenIndex] = xp[tokenIndex]
+                .mul(BASE_VIRTUAL_PRICE_PRECISION)
+                .div(baseVirtualPrice);
         }
         dy = dy.sub(1).div(self.tokenPrecisionMultipliers[tokenIndex]);
 
@@ -286,7 +300,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev Given a set of balances and precision multipliers, return the
+     * @notice Given a set of balances and precision multipliers, return the
      * precision-adjusted balances. The last element will also get scaled up by
      * the given baseVirtualPrice.
      *
@@ -316,7 +330,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev Return the precision-adjusted balances of all tokens in the pool
+     * @notice Return the precision-adjusted balances of all tokens in the pool
      * @param self Swap struct to read from
      * @return the pool balances "scaled" to the pool's precision, allowing
      * them to be more easily compared.
@@ -335,7 +349,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev Get the virtual price, to help calculate profit
+     * @notice Get the virtual price, to help calculate profit
      * @param self Swap struct to read from
      * @param metaSwapStorage MetaSwap struct to read from
      * @return the virtual price, scaled to precision of BASE_VIRTUAL_PRICE_PRECISION
@@ -360,7 +374,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev Externally calculates a swap between two tokens. The SwapUtils.Swap storage and
+     * @notice Externally calculates a swap between two tokens. The SwapUtils.Swap storage and
      * MetaSwap storage should be from the same MetaSwap contract.
      * @param self Swap struct to read from
      * @param metaSwapStorage MetaSwap struct from the same contract
@@ -387,7 +401,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev Internally calculates a swap between two tokens.
+     * @notice Internally calculates a swap between two tokens.
      *
      * @dev The caller is expected to transfer the actual amounts (dx and dy)
      * using the token contracts.
@@ -412,9 +426,15 @@ library MetaSwapUtils {
             tokenIndexFrom < xp.length && tokenIndexTo < xp.length,
             "Token index out of range"
         );
-        uint256 x = dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]).add(
-            xp[tokenIndexFrom]
-        );
+        uint256 baseLPTokenIndex = xp.length.sub(1);
+
+        uint256 x = dx.mul(self.tokenPrecisionMultipliers[tokenIndexFrom]);
+        if (tokenIndexFrom == baseLPTokenIndex) {
+            // When swapping from a base Swap token, scale up dx by its virtual price
+            x = x.mul(baseVirtualPrice).div(BASE_VIRTUAL_PRICE_PRECISION);
+        }
+        x = x.add(xp[tokenIndexFrom]);
+
         uint256 y = SwapUtils.getY(
             self._getAPrecise(),
             tokenIndexFrom,
@@ -423,12 +443,20 @@ library MetaSwapUtils {
             xp
         );
         dy = xp[tokenIndexTo].sub(y).sub(1);
+
+        if (tokenIndexTo == baseLPTokenIndex) {
+            // When swapping to a base Swap token, scale down dy by its virtual price
+            dy = dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(baseVirtualPrice);
+        }
+
         dyFee = dy.mul(self.swapFee).div(FEE_DENOMINATOR);
-        dy = dy.sub(dyFee).div(self.tokenPrecisionMultipliers[tokenIndexTo]);
+        dy = dy.sub(dyFee);
+
+        dy = dy.div(self.tokenPrecisionMultipliers[tokenIndexTo]);
     }
 
     /**
-     * @dev Calculates the expected return amount from swapping between
+     * @notice Calculates the expected return amount from swapping between
      * the pooled tokens and the underlying tokens of the base Swap pool.
      *
      * @param self Swap struct to read from
@@ -481,7 +509,15 @@ library MetaSwapUtils {
                     .baseSwap
                     .calculateTokenAmount(baseInputs, true)
                     .mul(v.baseVirtualPrice)
-                    .div(BASE_VIRTUAL_PRICE_PRECISION)
+                    .div(BASE_VIRTUAL_PRICE_PRECISION);
+                // when adding to the base pool,you pay approx 50% of the swap fee
+                v.x = v
+                    .x
+                    .sub(
+                        v.x.mul(_getBaseSwapFee(metaSwapStorage.baseSwap)).div(
+                            FEE_DENOMINATOR.mul(2)
+                        )
+                    )
                     .add(xp[v.baseLPTokenIndex]);
             } else {
                 // both from and to are from the base pool
@@ -528,7 +564,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev A simple method to calculate prices from deposits or
+     * @notice A simple method to calculate prices from deposits or
      * withdrawals, excluding fees but including slippage. This is
      * helpful as an input into the various "min" parameters on calls
      * to fight front-running
@@ -591,7 +627,7 @@ library MetaSwapUtils {
     /*** STATE MODIFYING FUNCTIONS ***/
 
     /**
-     * @dev swap two tokens in the pool
+     * @notice swap two tokens in the pool
      * @param self Swap struct to read from and write to
      * @param metaSwapStorage MetaSwap struct to read from and write to
      * @param tokenIndexFrom the token the user wants to sell
@@ -671,7 +707,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev Swaps with the underlying tokens of the base Swap pool. For this function,
+     * @notice Swaps with the underlying tokens of the base Swap pool. For this function,
      * the token indices are flattened out so that underlying tokens are represented
      * in the indices.
      * @dev Since this calls multiple external functions during the execution,
@@ -757,7 +793,7 @@ library MetaSwapUtils {
                     dx.mul(v.tokenPrecisionMultipliers[tokenIndexFrom])
                 );
             } else {
-                // Swapping from a base Swap token
+                // Swapping from one of the tokens hosted in the base Swap
                 // This case requires adding the underlying token to the base Swap, then
                 // using the base LP token to swap to the desired token
                 uint256[] memory baseAmounts = new uint256[](
@@ -765,7 +801,7 @@ library MetaSwapUtils {
                 );
                 baseAmounts[tokenIndexFrom - baseLPTokenIndex] = v.dx;
 
-                // Add liquidity to the underlying Swap contract and receive base LP token
+                // Add liquidity to the base Swap contract and receive base LP token
                 v.dx = baseSwap.addLiquidity(baseAmounts, 0, block.timestamp);
 
                 // Calculate the value of total amount of baseLPToken we end up with
@@ -787,16 +823,15 @@ library MetaSwapUtils {
                     xp
                 );
                 v.dy = xp[v.metaIndexTo].sub(y).sub(1);
+                if (tokenIndexTo >= baseLPTokenIndex) {
+                    // When swapping to a base Swap token, scale down dy by its virtual price
+                    v.dy = v.dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(
+                        v.baseVirtualPrice
+                    );
+                }
                 dyFee = v.dy.mul(self.swapFee).div(FEE_DENOMINATOR);
                 v.dy = v.dy.sub(dyFee).div(
                     v.tokenPrecisionMultipliers[v.metaIndexTo]
-                );
-            }
-
-            if (tokenIndexTo >= baseLPTokenIndex) {
-                // When swapping to a base Swap token, scale down dy by its virtual price
-                v.dy = v.dy.mul(BASE_VIRTUAL_PRICE_PRECISION).div(
-                    v.baseVirtualPrice
                 );
             }
 
@@ -861,7 +896,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev Add liquidity to the pool
+     * @notice Add liquidity to the pool
      * @param self Swap struct to read from and write to
      * @param metaSwapStorage MetaSwap struct to read from and write to
      * @param amounts the amounts of each token to add, in their native precision
@@ -993,7 +1028,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev Remove liquidity from the pool all in one token.
+     * @notice Remove liquidity from the pool all in one token.
      * @param self Swap struct to read from and write to
      * @param metaSwapStorage MetaSwap struct to read from and write to
      * @param tokenAmount the amount of the lp tokens to burn
@@ -1048,7 +1083,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev Remove liquidity from the pool, weighted differently than the
+     * @notice Remove liquidity from the pool, weighted differently than the
      * pool's current balances.
      *
      * @param self Swap struct to read from and write to
@@ -1156,7 +1191,7 @@ library MetaSwapUtils {
     }
 
     /**
-     * @dev Determines if the stored value of base Swap's virtual price is expired.
+     * @notice Determines if the stored value of base Swap's virtual price is expired.
      * If the last update was past the BASE_CACHE_EXPIRE_TIME, then update the stored value.
      *
      * @param metaSwapStorage MetaSwap struct to read from and write to
