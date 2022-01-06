@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IERC20.sol";
 
+import "hardhat/console.sol";
+
 interface IMasterChef {
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
@@ -344,10 +346,13 @@ contract MasterChefAxialV3 is Ownable, ReentrancyGuard {
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param amount LP token amount to deposit.
     function deposit(uint256 pid, uint256 amount) external nonReentrant {
+        console.log("Are we touching here");
         harvestFromMasterChef();
         updatePool(pid);
         PoolInfo memory pool = poolInfo[pid];
         UserInfo storage user = userInfo[pid][msg.sender];
+
+        console.log("The amount of mim tokens that the user has is", user.amount); 
 
         if (user.amount > 0) {
             // Harvest AXIAL
@@ -360,9 +365,13 @@ contract MasterChefAxialV3 is Ownable, ReentrancyGuard {
         pool.lpToken.safeTransferFrom(msg.sender, address(this), amount);
         uint256 receivedAmount = pool.lpToken.balanceOf(address(this)).sub(balanceBefore);
 
+        console.log("The amount being received is", receivedAmount);
+
         // Effects
         user.amount = user.amount.add(receivedAmount);
         user.rewardDebt = user.amount.mul(pool.accAxialPerShare).div(ACC_TOKEN_PRECISION);
+
+        console.log("The amount that the user has aftet the deposit is", user.amount);
 
         // Interactions
         IRewarder _rewarder = pool.rewarder;

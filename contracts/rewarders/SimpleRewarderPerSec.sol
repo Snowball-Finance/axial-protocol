@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../boringcrypto/BoringOwnable.sol";
 import "../libraries/SafeERC20.sol";
 
+import "hardhat/console.sol";
+
 interface IRewarder {
     using SafeERC20 for IERC20;
 
@@ -54,13 +56,14 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 public override rewardToken;
-    address public immutable rewardToken1;
-    address public immutable rewardToken2;
-    address public immutable rewardToken3;
-    address public immutable rewardToken4;
+    IERC20 public immutable rewardToken1;
+    IERC20 public immutable rewardToken2;
+    IERC20 public immutable rewardToken3;
+    IERC20 public immutable rewardToken4;
     IERC20 public immutable lpToken;
     bool public immutable isNative;
     IMasterChefAxial public immutable MCA;
+
 
 
     /// @dev Info of each MCA user.
@@ -97,10 +100,10 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     }
 
     constructor(
-        address _rewardToken1,
-        address _rewardToken2,
-        address _rewardToken3,
-        address _rewardToken4,
+        IERC20 _rewardToken1,
+        IERC20 _rewardToken2,
+        IERC20 _rewardToken3,
+        IERC20 _rewardToken4,
         IERC20 _lpToken,
         uint256[4] memory _tokenPerSec,
         IMasterChefAxial _MCA,
@@ -125,8 +128,8 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     }
 
     // function that pushes each of the rewardTokens into an array 
-    function rewardTokenArray(address, address, address, address) public view returns (address[4] memory rewardTokens){
-        rewardTokens = [rewardToken1, rewardToken2, rewardToken3, rewardToken4];
+    function rewardTokenArray(IERC20, IERC20, IERC20, IERC20) public view returns (address[4] memory rewardTokens){
+        rewardTokens = [address(rewardToken1), address(rewardToken2), address(rewardToken3), address(rewardToken4)];
     }
 
     /// @dev Update reward variables of the given poolInfo.
@@ -134,12 +137,10 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     function updatePool() public returns (PoolInfo memory pool) {
         pool = poolInfo;
 
-
         if (block.timestamp > pool.lastRewardTimestamp) {
             uint256 lpSupply = lpToken.balanceOf(address(MCA));
 
             if (lpSupply > 0) {
-
                 for (uint i = 0; i < 4; i++){
                     uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
                     uint256 tokenReward = timeElapsed.mul(tokenPerSec[i]);
@@ -152,14 +153,13 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     }
 
     /// @dev Sets the distribution reward rate. This will also update the poolInfo.
-    /// @param _tokenPerSec The number of token 1 to distribute per second
+    /// @param _tokenPerSec The number of tokens to distribute per second
     function setRewardRate(uint256[] memory _tokenPerSec) external onlyOwner {
         updatePool();
-
         uint256[] memory oldRate = new uint256[](4);
 
         for (uint i = 0; i < 4; i++){
-            uint256 oldRates = tokenPerSec[i];
+            uint256 oldRates = tokenPerSec[i]; 
 
             oldRate[i] = oldRates;
             tokenPerSec[i] = _tokenPerSec[i];
@@ -171,6 +171,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
     /// @param _user Address of user
     /// @param _lpAmount Number of LP tokens the user has
     function onAxialReward(address _user, uint256 _lpAmount) external override onlyMCA nonReentrant {
+        console.log("Inside onAxialReward");
         address[4] memory rewardTokens = rewardTokenArray(rewardToken1, rewardToken2, rewardToken3, rewardToken4); 
         updatePool();
         PoolInfo memory pool = poolInfo;
@@ -178,6 +179,8 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         uint256[] memory pending = new uint256[](4);
         uint256[] memory difference = new uint256[](4);
     
+        console.log("Acc token per share is" ,pool.accTokenPerShare[0]); 
+        console.log("User amount is" ,user.amount); 
         if (user.amount > 0) {
             for (uint i = 0; i < 4; i++){
                 uint256 pendings = (user.amount.mul(pool.accTokenPerShare[i]) / ACC_TOKEN_PRECISION).sub(user.rewardDebt[i]).add(
@@ -185,20 +188,11 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
                 );
                 pending[i] = pendings;
 
-                if (isNative) {
-                    uint256 balance = address(this).balance;
-                    if (pending[i] > balance) {
-                        (bool success, ) = _user.call.value(balance)("");
-                        require(success, "Transfer failed");
-                        user.unpaidRewards[i] = pending[i] - balance;
-                    } else {
-                        (bool success, ) = _user.call.value(pending[i])("");
-                        require(success, "Transfer failed");
-                        user.unpaidRewards[i] = 0;
-                    }
-                } else {
-                    if (rewardTokens[i] != address(0)){
+                console.log("Pending tokens are" ,pending[i]); 
+
+                if (rewardTokens[i] != address(0)){
                         uint256 balance = IERC20(rewardTokens[i]).balanceOf(address(this));
+                        console.log("The balance of the reward token is ", balance);
                         if (pending[i] > balance) {
                             IERC20(rewardTokens[i]).safeTransfer(_user, balance);
                             user.unpaidRewards[i] = pending[i] - balance;
@@ -206,15 +200,16 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
                             IERC20(rewardTokens[i]).safeTransfer(_user, pending[i]);
                             user.unpaidRewards[i] = 0;
                         }
-                    }   
-                }
+                        console.log("unpaid rewards for user " ,user.unpaidRewards[i]); 
+                }   
+                
                 user.amount = _lpAmount;
                 user.rewardDebt[i] = user.amount.mul(pool.accTokenPerShare[i]) / ACC_TOKEN_PRECISION;
                 difference[i] = pending[i] - user.unpaidRewards[i];
             } 
-            emit OnReward(_user, difference);
         }
-           
+        emit OnReward(_user, difference);
+        console.log("Checking to see if we are getting this far");
     }
 
     /// @dev View function to see pending tokens
@@ -226,7 +221,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         
     }
 
-    function pending(address _user) public returns (uint256[] memory pending){
+    function pending(address _user) public view returns (uint256[] memory pending){
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
         uint256[] memory accTokenPerShare = new uint256[](4);
@@ -245,6 +240,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
                 user.unpaidRewards[i]
             );
         }
+        console.log("Hello. It's me :)");
         return pending; 
     }
     
