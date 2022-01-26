@@ -352,7 +352,7 @@ contract MasterChefAxialV3 is Ownable, ReentrancyGuard {
         PoolInfo memory pool = poolInfo[pid];
         UserInfo storage user = userInfo[pid][msg.sender];
 
-        console.log("The amount of mim tokens that the user has is", user.amount); 
+        console.log("The amount of tokens that the user has is", user.amount); 
 
         if (user.amount > 0) {
             // Harvest AXIAL

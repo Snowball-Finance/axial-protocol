@@ -145,11 +145,14 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
                     uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
                     uint256 tokenReward = timeElapsed.mul(tokensPerSec[rewardTokens[i]]);
                     pool.accTokensPerShare[i] = pool.accTokensPerShare[i].add((tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply));
+                    console.log("The accTokensPerShare is", pool.accTokensPerShare[i]);
                 }
             }
             pool.lastRewardTimestamp = block.timestamp;
             poolInfo = pool;
         }
+    
+        return pool; 
     }
 
     /// @dev Sets the distribution reward rate. This will also update the poolInfo.
@@ -171,9 +174,6 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         uint256[] memory pending;
         uint256[] memory difference;
     
-    
-        console.log("User amount is" ,user.amount); 
-
         if (user.amount > 0) {
             for (uint i = 0; i < rewardTokens.length; i++){
                 uint256 pendings = (user.amount.mul(pool.accTokensPerShare[i]) / ACC_TOKEN_PRECISION).sub(user.rewardDebts[i]).add(
@@ -202,53 +202,57 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
             } 
         }
         emit OnReward(_user, difference);
-        console.log("Checking to see if we are getting this far");
+    }
+
+    /// deprecated because we have more than one token
+    /// this contract inherits IRewarder, and so this function is necessary to avoid marking the contract as abstract 
+    function pendingTokens(address _user) external view override returns (uint256 pending) {
+        return 0;  
     }
 
     /// @dev View function to see pending tokens
     /// @param _user Address of user.
     /// @return pending reward for a given user.
-    function pendingTokens(address _user) external view override returns (uint256 pending) {
-        return 0;  
-    }
-
-    function pending(address _user) public view returns (uint256[] memory pending){
+    function pendingTokens(address _user, uint256 tokenIndex) public view returns (uint256 pending){
         UserInfo storage user = userInfo[_user];
-        uint256[] memory accTokensPerShare; 
 
-        for (uint i = 0; i < rewardTokens.length; i++){
-            accTokensPerShare[i] = poolInfo.accTokensPerShare[i]; 
-            uint256 lpSupply = IERC20(lpToken).balanceOf(MCA);
+        console.log("inside pendingTokens");
+       
+        uint256 accTokensPerShare = poolInfo.accTokensPerShare[tokenIndex]; 
+        console.log("inside pendingTokens, and accTokenspershare is", accTokensPerShare);
+        uint256 lpSupply = IERC20(lpToken).balanceOf(MCA);
 
-            if (block.timestamp > poolInfo.lastRewardTimestamp && lpSupply != 0) {
-                uint256 timeElapsed = block.timestamp.sub(poolInfo.lastRewardTimestamp);
-                uint256 tokenReward = timeElapsed.mul(tokensPerSec[rewardTokens[i]]); 
-                accTokensPerShare[i] = accTokensPerShare[i].add(tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply));
-            }
-
-            pending[i] = (user.amount.mul(accTokensPerShare[i]) / ACC_TOKEN_PRECISION).sub(user.rewardDebts[i]).add(
-                user.unpaidRewards[i]
-            );
+        if (block.timestamp > poolInfo.lastRewardTimestamp && lpSupply != 0) {
+            uint256 timeElapsed = block.timestamp.sub(poolInfo.lastRewardTimestamp);
+            uint256 tokenReward = timeElapsed.mul(tokensPerSec[rewardTokens[tokenIndex]]); 
+            accTokensPerShare = accTokensPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply));
         }
+
+        pending = (user.amount.mul(accTokensPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebts[tokenIndex]).add(
+            user.unpaidRewards[tokenIndex]
+        );
+    
         return pending; 
     }
     
 
     /// @dev In case rewarder is stopped before emissions finished, this function allows
     /// withdrawal of remaining tokens.
-    function emergencyWithdraw() public onlyOwner {
-            for (uint i = 0; i < rewardTokens.length; i++){
-                IERC20(rewardTokens[i]).safeTransfer(address(msg.sender), IERC20(rewardTokens[i]).balanceOf(address(this)));   
-            }
+    function emergencyWithdraw(uint256 tokenIndex) public onlyOwner {
+        address token = rewardTokens[tokenIndex];
+        uint256 balance = IERC20(token).balanceOf(address(this));
+        IERC20(token).safeTransfer(address(msg.sender), balance);   
+    }
+
+    // returns the length of our rewardTokens array
+    function rewardTokensLength() public view returns (uint256) {
+        return rewardTokens.length; 
     }
 
     /// @dev View function to see balance of reward tokens.
-    function balance() external view returns (uint256[] memory balances) {
-        console.log("insigdefdfbrbbttbr hg");
-        for (uint i = 0; i < rewardTokens.length; i++){
-            balances[i] = IERC20(rewardTokens[i]).balanceOf(address(this));
-        }
-        return balances; 
+    function balance(uint256 tokenIndex) external view returns (uint256 balance) {
+        balance = IERC20(rewardTokens[tokenIndex]).balanceOf(address(this));
+        return balance; 
     }
 
     /// @dev payable function needed to receive AVAX

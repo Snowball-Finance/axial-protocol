@@ -25,6 +25,13 @@ export async function setupSigners() {
     return [timelockSigner, governanceSigner];
 };
 
+export async function getCurrentTimestamp() {
+   let blockNumber =  await ethers.provider.getBlockNumber();
+   let block = await ethers.provider.getBlock(blockNumber);
+
+   return block.timestamp;
+}
+
 // Generates an erc20 token 
 export async function generateToken(asset_name: string, asset_code: string, wallet_addr: string, walletSigner: Signer) {
     const ercFactory = await ethers.getContractFactory("ERC20");
@@ -38,10 +45,16 @@ export async function generateToken(asset_name: string, asset_code: string, wall
 };
 
 // Generates an lp token 
-export async function generateLPToken(asset_name: string, asset_code: string) {
+export async function generateLPToken(asset_name: string, asset_code: string, wallet_addr: string, walletSigner: Signer) {
     const lpFactory = await ethers.getContractFactory("LPToken");
     const lpToken = await lpFactory.deploy();
     lpToken.initialize(asset_name, asset_code);
+
+    // Load lp token with an initial balance
+    await overwriteTokenAmount(lpToken.address, wallet_addr, "25000000000000000000000", 101);
+    let amt = await lpToken.connect(walletSigner).balanceOf(wallet_addr);
+    log(`amt of lp tokens is ${amt}`);
+    
     return lpToken.address;  
 };
 

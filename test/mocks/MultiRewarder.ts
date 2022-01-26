@@ -28,3 +28,12 @@ export async function MultiRewarderContract(
 
     return MultiRewarder;
 }
+
+
+export async function MasterChefAxialV3(masterchefAxial_addr: string, governanceSigner: Signer){
+    const MasterChefAxial = await ethers.getContractAt("MasterChefAxialV3", masterchefAxial_addr, governanceSigner); 
+
+    return MasterChefAxial; 
+}
+
+

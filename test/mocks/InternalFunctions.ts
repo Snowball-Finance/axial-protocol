@@ -2,10 +2,16 @@ const { ethers, network } = require("hardhat");
 import { expect } from "chai";
 import { log } from "console";
 import {Contract, Signer} from "ethers";
-import { generateToken } from "../../utils/static";
+import { generateToken, getCurrentTimestamp } from "../../utils/static";
 
 
-export async function addRewardToken(MultiRewarder: Contract, governanceSigner: Signer, tokenPerSec: number, wallet_addr: string, walletSigner: Signer) {
+export async function addRewardToken(
+    MultiRewarder: Contract, 
+    governanceSigner: Signer, 
+    tokenPerSec: string, 
+    wallet_addr: string, 
+    walletSigner: Signer
+) {
     // Generate four new reward tokens
     let token = await generateToken("Token", "T", wallet_addr, walletSigner);
     await MultiRewarder.connect(governanceSigner).addRewardToken(token, tokenPerSec); 
@@ -13,9 +19,69 @@ export async function addRewardToken(MultiRewarder: Contract, governanceSigner: 
 
 // Updates the balance of the reward token 
 export async function balanceOfRewardTokens(MultiRewarder: Contract) {
-    // Checks the balance of our reward tokens 
-    const balance = await MultiRewarder.balance(); 
-    for(let i = 0; i < balance.length; i++){
-        expect(balance[i]).to.be.gt(0);    
+    const numOfRewards = await MultiRewarder.rewardTokensLength(); 
+    for(let i = 0; i < numOfRewards; i++){
+        // Checks the balance of our reward tokens 
+        let balance = await MultiRewarder.balance(i); 
+        const BN = ethers.BigNumber.from(balance)._hex.toString();
+        expect(balance).to.be.equals(BN);    
     }
 }
+
+export async function addNewLP(
+    MasterChefAxial: Contract, 
+    timelockSigner: Signer, 
+    lp: string, 
+    MultiRewarder: Contract
+) {
+    let numOfPoolsBefore = await MasterChefAxial.connect(timelockSigner).poolLength();
+    log(`\tThe number of pools of MCA is: ${numOfPoolsBefore}`); 
+
+    // adding a new lp to the pool  
+    await MasterChefAxial.connect(timelockSigner).add("10000", lp, MultiRewarder.address); 
+    let numOfPoolsAfter = await MasterChefAxial.connect(timelockSigner).poolLength();
+    log(`\tThe number of pools of MCA after a new lp is added is: ${numOfPoolsAfter}`); 
+    expect(numOfPoolsAfter).to.be.equals(numOfPoolsBefore.add(1));
+}
+
+export async function depositsIntoMasterChef(MasterChefAxial: Contract, assetContract: Contract, walletSigner: Signer, masterchefAxial_addr: string) {
+    await assetContract.connect(walletSigner).approve(masterchefAxial_addr, "25000000000000000000000");
+    await MasterChefAxial.connect(walletSigner).deposit(6, "25000000000000000000000"); 
+}
+
+// Gives the number of reward tokens pending 
+export async function pendingRewardTokens(MultiRewarder: Contract, wallet_addr: string) {
+    const numOfRewards = await MultiRewarder.rewardTokensLength();
+    for (let i = 0; i < numOfRewards; i++){
+        const pending = await MultiRewarder.pendingTokens(wallet_addr, i); 
+        log(`The pending tokens for each reward token are: ${pending}`);
+        expect(pending).to.be.gt(0); 
+    } 
+}
+
+// Update reward variables of the given pool.
+export async function updatePoolInfo(MultiRewarder: Contract) {
+    // get the current timestamp 
+    let currentTime = await getCurrentTimestamp();
+    log(`The time before updating the pool is ${currentTime}`);
+
+    // runs updatePoolInfo
+    await MultiRewarder.updatePool();
+    const poolInfo = await MultiRewarder.poolInfo(); 
+
+    // we expect the current timestamp to be less than the lastRewardTimestamp 
+    log(`Updated pool info:`);
+    log(poolInfo);
+    log(`The last reward timestamp is ${poolInfo.lastRewardTimestamp}`); 
+    expect(poolInfo.lastRewardTimestamp).to.be.gt(currentTime); 
+
+    log(`The acc tokens per share  is ${poolInfo["accTokensPerShare"]}`); 
+
+   
+    
+}
+
+export async function updateRewardRate(MultiRewarder: Contract, token_addr: string, tokensPerSec: string[]) {
+    await MultiRewarder.setRewardRate(token_addr, "350000000000"); 
+}
+

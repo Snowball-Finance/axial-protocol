@@ -9,7 +9,7 @@ export async function returnSigner(address: string): Promise<Signer> {
   return ethers.provider.getSigner(address)
 }
 
-export async function overwriteTokenAmount(assetAddr: string, walletAddr: string, amount: string, slot: number = 0){
+export async function overwriteTokenAmount(assetAddr: string, walletAddr: string, amount: string, slot: number){
   const index = ethers.utils.solidityKeccak256(["uint256", "uint256"], [walletAddr, slot]);
   const BN = ethers.BigNumber.from(amount)._hex.toString();
   const number = ethers.utils.hexZeroPad(BN, 32);
