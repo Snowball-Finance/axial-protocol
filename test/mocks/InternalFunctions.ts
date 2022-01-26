@@ -12,9 +12,15 @@ export async function addRewardToken(
     wallet_addr: string, 
     walletSigner: Signer
 ) {
+
+    let numOfRewards = await MultiRewarder.connect(governanceSigner).rewardTokensLength(); 
+    log(`the number of reward tokens before adding a new reward token is ${numOfRewards}`);
     // Generate four new reward tokens
     let token = await generateToken("Token", "T", wallet_addr, walletSigner);
-    await MultiRewarder.connect(governanceSigner).addRewardToken(token, tokenPerSec); 
+    await MultiRewarder.connect(governanceSigner).addRewardToken(token, tokenPerSec);
+    let numOfRewards2 = await MultiRewarder.connect(governanceSigner).rewardTokensLength(); 
+    log(`the number of reward tokens after adding a new reward token is ${numOfRewards2}`);
+    expect(numOfRewards2).to.be.equals((numOfRewards).add(1)); 
 }
 
 // Updates the balance of the reward token 
@@ -32,22 +38,27 @@ export async function addNewLP(
     MasterChefAxial: Contract, 
     timelockSigner: Signer, 
     lp: string, 
-    MultiRewarder: Contract
+    MultiRewarder: Contract, 
 ) {
     let numOfPoolsBefore = await MasterChefAxial.connect(timelockSigner).poolLength();
-    log(`\tThe number of pools of MCA is: ${numOfPoolsBefore}`); 
+    log(`\tThe number of pools of MCA before a new lp is added is: ${numOfPoolsBefore}`); 
 
     // adding a new lp to the pool  
     await MasterChefAxial.connect(timelockSigner).add("10000", lp, MultiRewarder.address); 
     let numOfPoolsAfter = await MasterChefAxial.connect(timelockSigner).poolLength();
     log(`\tThe number of pools of MCA after a new lp is added is: ${numOfPoolsAfter}`); 
     expect(numOfPoolsAfter).to.be.equals(numOfPoolsBefore.add(1));
+
+  
 }
 
-export async function depositsIntoMasterChef(MasterChefAxial: Contract, assetContract: Contract, walletSigner: Signer, masterchefAxial_addr: string) {
-    await assetContract.connect(walletSigner).approve(masterchefAxial_addr, "25000000000000000000000");
-    await MasterChefAxial.connect(walletSigner).deposit(6, "25000000000000000000000"); 
+export async function depositsLPToMasterChef(assetContract: Contract, walletSigner: Signer, masterchefAxial_addr: string, MasterChefAxial: Contract) {
+    // deposit lp into MCA
+    await assetContract.connect(walletSigner).approve(masterchefAxial_addr, 25000000000000000000000);
+    await MasterChefAxial.connect(walletSigner).deposit(6, 25000000000000000000000); 
 }
+
+
 
 // Gives the number of reward tokens pending 
 export async function pendingRewardTokens(MultiRewarder: Contract, wallet_addr: string) {

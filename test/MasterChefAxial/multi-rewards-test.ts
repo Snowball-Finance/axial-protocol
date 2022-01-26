@@ -9,8 +9,8 @@ const {setupSigners, generateToken, generateLPToken} = require("../../utils/stat
 import {MultiRewarderContract, MasterChefAxialV3} from "../mocks/MultiRewarder";
 import { 
    addRewardToken, balanceOfRewardTokens, pendingRewardTokens, 
-   updatePoolInfo, updateRewardRate, depositsIntoMasterChef,
-   addNewLP
+   updatePoolInfo, updateRewardRate,
+   addNewLP, depositsLPToMasterChef
 } from "../mocks/InternalFunctions";
 
 
@@ -35,7 +35,7 @@ const doMultiRewardsTest = () => {
    let asset1: string, asset2: string, asset3: string, asset4: string; 
    let rewardTokensArray: string[];
    let tokensPerSec: string[]; 
-   let lp: string; 
+   let lp: Contract; 
    let timelock_addr: string;
    let governance_addr: string; 
    let multiRewarder_addr: string;
@@ -43,16 +43,7 @@ const doMultiRewardsTest = () => {
 
 
    describe("Tests for multi-rewards:", async () => {
-
-      //These reset the state after each test is executed 
-      beforeEach(async () => {
-         snapshotId = await ethers.provider.send('evm_snapshot');
-      });
      
-      afterEach(async () => {
-         await ethers.provider.send('evm_revert', [snapshotId]);
-      });
- 
       before(async () => {
 
          await network.provider.send('hardhat_impersonateAccount', [wallet_addr]);
@@ -75,8 +66,7 @@ const doMultiRewardsTest = () => {
 
          // Generate an LP token
          lp = await generateLPToken("LPToken", "LP", wallet_addr, walletSigner);
-         LPAsset = await ethers.getContractAt("LPToken", lp, walletSigner); 
-
+         
 
          // Create tokens per sec array
          tokensPerSec = ["250000000000", "250000000000", "250000000000", "250000000000"]; 
@@ -87,7 +77,7 @@ const doMultiRewardsTest = () => {
        
          /** MultiRewarder Mock **/ 
          MultiRewarder = await MultiRewarderContract( 
-            lp,  
+            lp.address,  
             rewardTokensArray, 
             tokensPerSec,
             masterchefAxial_addr,
@@ -98,7 +88,7 @@ const doMultiRewardsTest = () => {
 
 
 
-      it("should check add a reward token to our list of reward tokens", async function () {
+      it("should add a reward token to our list of reward tokens", async function () {
          await addRewardToken(MultiRewarder, governanceSigner, "239042309532", masterchefAxial_addr, walletSigner); 
       })
 
@@ -106,26 +96,39 @@ const doMultiRewardsTest = () => {
          await balanceOfRewardTokens(MultiRewarder); 
       })
 
-      it("add a new lp to MasterChefAxialV3", async function () {
-         await addNewLP(MasterChefAxial, timelockSigner, lp, MultiRewarder); 
+      it("should add a new lp to MasterChefAxialV3 ", async function () {
+         await addNewLP(MasterChefAxial, timelockSigner, lp.address, MultiRewarder); 
       }) 
 
-      it("should deposit our lp tokens into MCA", async function() {
-         await depositsIntoMasterChef(MasterChefAxial, LPAsset, walletSigner, masterchefAxial_addr); 
+      it("should deposit an initial amount of the lp token into MCA", async function () {
+         let harvest = null; 
+         let provider = await ethers.getDefaultProvider();
+         let filter = {
+            address: masterchefAxial_addr,
+            topics: [
+                ethers.utils.id("Harvest(address,uint256,uint256)")
+            ]
+        }
+        provider.on(filter, (log: any, event: any) => {
+            // Emitted whenever a DAI token transfer occurs
+            log(`harvest was found!!!!!`);
+        })
+        
+         await depositsLPToMasterChef(lp, walletSigner, masterchefAxial_addr, MasterChefAxial);
       })
 
-      it("should return the number of tokens pending for each reward token", async function () {
-         await pendingRewardTokens(MultiRewarder, wallet_addr); 
-      })
+      // it("should return the number of tokens pending for each reward token", async function () {
+      //    await pendingRewardTokens(MultiRewarder, wallet_addr); 
+      // })
 
-      it("should update pool in MultiRewarder Contract", async function () {
-         await updatePoolInfo(MultiRewarder); 
-      })
+      // it("should update pool in MultiRewarder Contract", async function () {
+      //    await updatePoolInfo(MultiRewarder); 
+      // })
 
-      it("should update the reward rate of a reward token", async function () {
-         await updateRewardRate(MultiRewarder, asset1, tokensPerSec); 
-         expect(tokensPerSec[0]).to.be.equals("350000000000"); 
-      })
+      // it("should update the reward rate of a reward token", async function () {
+      //    await updateRewardRate(MultiRewarder, asset1, tokensPerSec); 
+      //    expect(tokensPerSec[0]).to.be.equals("350000000000"); 
+      // })
 
    });
 

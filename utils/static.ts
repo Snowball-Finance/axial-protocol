@@ -51,11 +51,10 @@ export async function generateLPToken(asset_name: string, asset_code: string, wa
     lpToken.initialize(asset_name, asset_code);
 
     // Load lp token with an initial balance
-    await overwriteTokenAmount(lpToken.address, wallet_addr, "25000000000000000000000", 101);
+    lpToken.mint(wallet_addr, "25000000000000000000000"); 
     let amt = await lpToken.connect(walletSigner).balanceOf(wallet_addr);
-    log(`amt of lp tokens is ${amt}`);
-    
-    return lpToken.address;  
+
+    return lpToken;  
 };
 
 

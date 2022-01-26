@@ -114,6 +114,7 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         for (uint i = 0; i < _tokens.length; i++) {
             rewardTokens.push(_tokens[i]);
             tokensPerSec[_tokens[i]] = _tokensPerSec[i];
+            poolInfo.accTokensPerShare.push(0);
         }
         MCA = _MCA;
         governance = _governance; 
@@ -130,6 +131,7 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         // adding a new reward token to the array 
         rewardTokens.push(token);
         tokensPerSec[token] = tokenPerSec;
+        poolInfo.accTokensPerShare.push(0); 
     }
 
     /// @dev Update reward variables of the given poolInfo.
@@ -140,6 +142,8 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         if (block.timestamp > pool.lastRewardTimestamp) {
             uint256 lpSupply = IERC20(lpToken).balanceOf(MCA);
 
+            console.log("The number of reward tokens is", rewardTokens.length);
+    
             if (lpSupply > 0) {
                 for (uint i = 0; i < rewardTokens.length; i++){
                     uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
@@ -164,7 +168,7 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         emit RewardRateUpdated(_token, _tokenPerSec); 
     }
 
-    /// @dev Function called by MasterChefAxial whenever staker claims AXIAL harvest. Allows staker to also receive a 2nd reward token.
+    /// @dev Function called by MasterChefAxial whenever staker claims AXIAL harvest. Allows staker to also receive their reward tokens.
     /// @param _user Address of user
     /// @param _lpAmount Number of LP tokens the user has
     function onAxialReward(address _user, uint256 _lpAmount) external override onlyMCA nonReentrant {
@@ -175,11 +179,13 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         uint256[] memory difference;
     
         if (user.amount > 0) {
+            console.log("WE are inside the loop in the onAxialReward function");
             for (uint i = 0; i < rewardTokens.length; i++){
                 uint256 pendings = (user.amount.mul(pool.accTokensPerShare[i]) / ACC_TOKEN_PRECISION).sub(user.rewardDebts[i]).add(
                         user.unpaidRewards[i]
                 );
                 pending[i] = pendings;
+
 
                 console.log("Pending tokens are" ,pending[i]); 
 
