@@ -1,15 +1,12 @@
 /* eslint-disable no-undef */
 import { Signer, Contract } from "ethers"
-import { expect } from "chai"
-import async from "../../../Library/Caches/typescript/4.5/node_modules/@types/async"
-const { ethers, network } = require("hardhat")
-const { log } = require("../../utils/log")
-const { returnSigner } = require("../../utils/helpers")
-const {
+import { network } from "hardhat"
+import { returnSigner } from "../../utils/helpers"
+import {
   setupSigners,
   generateToken,
   generateLPToken,
-} = require("../../utils/static")
+} from "../../utils/static"
 import {
   MultiRewarderContract,
   MasterChefAxialV3,
@@ -24,6 +21,7 @@ import {
   depositsLPToMasterChef,
   pendingTokens,
 } from "../mocks/InternalFunctions"
+import { log } from "../../utils/log"
 
 const masterAbi = [
   {
@@ -417,7 +415,6 @@ const doMultiRewardsTest = () => {
       await network.provider.send("hardhat_impersonateAccount", [wallet_addr])
       log(`\timpersonating account: ${wallet_addr}`)
       walletSigner = await returnSigner(wallet_addr)
-
       ;[timelockSigner, governanceSigner] = await setupSigners()
 
       timelock_addr = await timelockSigner.getAddress()

@@ -238,8 +238,8 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
             uint256 pendingBonusToken
         ){
 
-            MasterChefAxialV3 mcaContract = MasterChefAxialV3(MCA);
-            MCAV3UserInfo storage user = mcaContract.userInfo(pid,_user);
+            // MasterChefAxialV3 mcaContract = MasterChefAxialV3(MCA);
+            // MCAV3UserInfo storage user = mcaContract.userInfo(pid,_user);
             
             // MCAV3PoolInfo memory pool = mcaContract.poolInfo(pid);
 
