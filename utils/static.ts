@@ -53,6 +53,7 @@ export async function generateLPToken(asset_name: string, asset_code: string, wa
     // Load lp token with an initial balance
     lpToken.mint(wallet_addr, "25000000000000000000000"); 
     let amt = await lpToken.connect(walletSigner).balanceOf(wallet_addr);
+    
 
     return lpToken;  
 };
