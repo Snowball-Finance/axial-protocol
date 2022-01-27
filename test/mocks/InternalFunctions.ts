@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { log } from "console";
 import {Contract, Signer} from "ethers";
 import { generateToken, getCurrentTimestamp } from "../../utils/static";
+import { fastForwardAWeek} from "../../utils/helpers";
 
 
 export async function addRewardToken(
@@ -34,6 +35,10 @@ export async function balanceOfRewardTokens(MultiRewarder: Contract) {
     }
 }
 
+export async function balance(SimpleRewarder: Contract) {
+    await SimpleRewarder.balance(); 
+}
+
 export async function addNewLP(
     MasterChefAxial: Contract, 
     timelockSigner: Signer, 
@@ -58,6 +63,13 @@ export async function depositsLPToMasterChef(assetContract: Contract, walletSign
     await MasterChefAxial.connect(walletSigner).deposit(6, "25000000000000000000000"); 
 }
 
+export async function pendingTokens(MasterChefAxial: Contract, timelockSigner: Signer, wallet_addr: string) {
+    let pending1 = await MasterChefAxial.connect(timelockSigner).pendingTokens(6, wallet_addr);
+
+    await fastForwardAWeek();
+    let pending2 = await MasterChefAxial.connect(timelockSigner).pendingTokens(6, wallet_addr);
+    expect(pending1.pendingAxial).to.be.lt(pending2.pendingAxial);
+}
 
 
 // Gives the number of reward tokens pending 
@@ -65,7 +77,7 @@ export async function pendingRewardTokens(MultiRewarder: Contract, wallet_addr: 
     const numOfRewards = await MultiRewarder.rewardTokensLength();
     for (let i = 0; i < numOfRewards; i++){
         const pending = await MultiRewarder.pendingTokens(wallet_addr, i); 
-        log(`The pending tokens for each reward token are: ${pending}`);
+        log(`\t💸The pending tokens for each reward token are: ${pending}`);
         expect(pending).to.be.gt(0); 
     } 
 }
