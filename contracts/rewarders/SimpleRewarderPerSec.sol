@@ -198,6 +198,10 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         uint256 accTokenPerShare = pool.accTokenPerShare;
         uint256 lpSupply = lpToken.balanceOf(address(MCA));
 
+        console.log("The lp supply is", lpSupply);
+
+        console.log("The user amount is", user.amount); 
+
         if (block.timestamp > pool.lastRewardTimestamp && lpSupply != 0) {
             uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
             uint256 tokenReward = timeElapsed.mul(tokenPerSec);

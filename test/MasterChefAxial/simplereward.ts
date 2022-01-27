@@ -10,7 +10,8 @@ import {SimpleRewarderContract, MasterChefAxialV3} from "../mocks/MultiRewarder"
 import { 
    balance, balanceOfRewardTokens, pendingRewardTokens, 
    updatePoolInfo, updateRewardRate,
-   addNewLP, depositsLPToMasterChef, pendingTokens
+   addNewLP, depositsLPToMasterChef, pendingTokens,
+   pendingSingleToken
 } from "../mocks/InternalFunctions";
 
 
@@ -101,6 +102,10 @@ const doSimpleRewardsTest = () => {
     it("should return the pending axial on frontend", async function () {
     await pendingTokens(MasterChefAxial, timelockSigner, wallet_addr);
     })
+
+    it("should return the number of tokens pending for each reward token", async function () {
+        await pendingSingleToken(SimpleRewarder, wallet_addr); 
+     })
 
       // it("should return the number of tokens pending for each reward token", async function () {
       //    await pendingRewardTokens(SimpleRewarder, wallet_addr); 

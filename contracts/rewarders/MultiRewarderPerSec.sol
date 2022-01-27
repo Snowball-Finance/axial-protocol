@@ -8,18 +8,19 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../boringcrypto/BoringOwnable.sol";
 import "../libraries/SafeERC20.sol";
 import "../libraries/ProtocolGovernance.sol";
+import  "../MasterChefAxialV3.sol";
 
 import "hardhat/console.sol";
 
-interface IRewarder {
-    using SafeERC20 for IERC20;
+// interface IRewarder {
+//     using SafeERC20 for IERC20;
 
-    function onAxialReward(address user, uint256 newLpAmount) external;
+//     function onAxialReward(address user, uint256 newLpAmount) external;
 
-    function pendingTokens(address user) external view returns (uint256 pending);
+//     function pendingTokens(address user) external view returns (uint256 pending);
 
-    function rewardToken() external view returns (IERC20);
-}
+//     function rewardToken() external view returns (IERC20);
+// }
 
 interface IMasterChefAxial {
     using SafeERC20 for IERC20;
@@ -68,8 +69,21 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
     /// `rewardDebt` The amount of YOUR_TOKEN entitled to the user.
     struct UserInfo {
         uint256 amount;
-        uint256[] rewardDebts; 
-        uint256[] unpaidRewards;
+        mapping(address => uint256) rewardDebts; 
+        mapping(address => uint256) unpaidRewards;
+    }
+
+
+    struct MCAV3PoolInfo {
+        IERC20 lpToken; // Address of LP token contract.
+        uint256 allocPoint; // How many allocation points assigned to this pool. AXIAL to distribute per block.
+        uint256 lastRewardTimestamp; // Last block number that AXIAL distribution occurs.
+        uint256 accAxialPerShare; // Accumulated AXIAL per share, times 1e12. See below.
+    }
+
+    struct MCAV3UserInfo {
+        uint256 amount;
+        uint256 rewardDebt;
     }
 
     /// @dev Info of each MCA poolInfo.
@@ -111,10 +125,12 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         require(Address.isContract(_MCA), "constructor: MasterChefAxial must be a valid contract");
         lpToken = _lpToken;
 
-        for (uint i = 0; i < _tokens.length; i++) {
+        for (uint i = 0; i < _tokens.length; i++) { 
             rewardTokens.push(_tokens[i]);
             tokensPerSec[_tokens[i]] = _tokensPerSec[i];
             poolInfo.accTokensPerShare.push(0);
+            
+
         }
         MCA = _MCA;
         governance = _governance; 
@@ -178,8 +194,8 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         if (user.amount > 0) {
             console.log("WE are inside the loop in the onAxialReward function");
             for (uint i = 0; i < rewardTokens.length; i++){
-                uint256 pendings = (user.amount.mul(pool.accTokensPerShare[i]) / ACC_TOKEN_PRECISION).sub(user.rewardDebts[i]).add(
-                        user.unpaidRewards[i]
+                uint256 pendings = (user.amount.mul(pool.accTokensPerShare[i]) / ACC_TOKEN_PRECISION).sub(user.rewardDebts[rewardTokens[i]]).add(
+                        user.unpaidRewards[rewardTokens[i]]
                 );
                 pending[i] = pendings;
 
@@ -191,17 +207,17 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
                         console.log("The balance of the reward token is ", balance);
                         if (pending[i] > balance) {
                             IERC20(rewardTokens[i]).safeTransfer(_user, balance);
-                            user.unpaidRewards[i] = pending[i] - balance;
+                            user.unpaidRewards[rewardTokens[i]] = pending[i] - balance;
                         } else {
                             IERC20(rewardTokens[i]).safeTransfer(_user, pending[i]);
-                            user.unpaidRewards[i] = 0;
+                            user.unpaidRewards[rewardTokens[i]] = 0;
                         }
-                        console.log("unpaid rewards for user " ,user.unpaidRewards[i]); 
+                        console.log("unpaid rewards for user " ,user.unpaidRewards[rewardTokens[i]]); 
                 }   
                 
                 user.amount = _lpAmount;
-                user.rewardDebts[i] = user.amount.mul(pool.accTokensPerShare[i]) / ACC_TOKEN_PRECISION;
-                difference[i] = pending[i] - user.unpaidRewards[i];
+                user.rewardDebts[rewardTokens[i]] = user.amount.mul(pool.accTokensPerShare[i]) / ACC_TOKEN_PRECISION;
+                difference[i] = pending[i] - user.unpaidRewards[rewardTokens[i]];
             } 
         }
         emit OnReward(_user, difference);
@@ -213,26 +229,44 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         return 0;  
     }
 
+    function pendingMasterChef(uint256 pid, address _user) external view
+        returns (
+            uint256 pendingAxial,
+            uint256 tokenIndex, 
+            address bonusTokenAddress,
+            string memory bonusTokenSymbol,
+            uint256 pendingBonusToken
+        ){
+
+            MasterChefAxialV3 mcaContract = MasterChefAxialV3(MCA);
+            MCAV3UserInfo storage user = mcaContract.userInfo(pid,_user);
+            
+            // MCAV3PoolInfo memory pool = mcaContract.poolInfo(pid);
+
+            
+            
+
+        }
+
     /// @dev View function to see pending tokens
     /// @param _user Address of user.
     /// @return pending reward for a given user.
-    function pendingTokens(address _user, uint256 tokenIndex) public view returns (uint256 pending){
+    function pendingMultiTokens(address _user, uint256 tokenIndex) public view returns (uint256 pending){
         UserInfo storage user = userInfo[_user];
 
-        console.log("inside pendingTokens");
-       
         uint256 accTokensPerShare = poolInfo.accTokensPerShare[tokenIndex]; 
-        console.log("inside pendingTokens, and accTokenspershare is", accTokensPerShare);
         uint256 lpSupply = IERC20(lpToken).balanceOf(MCA);
+        console.log("The lpSupply is", lpSupply);
+        console.log("The user.amount is", user.amount);
 
         if (block.timestamp > poolInfo.lastRewardTimestamp && lpSupply != 0) {
             uint256 timeElapsed = block.timestamp.sub(poolInfo.lastRewardTimestamp);
-            uint256 tokenReward = timeElapsed.mul(tokensPerSec[rewardTokens[tokenIndex]]); 
+            uint256 tokenReward = timeElapsed.mul(tokensPerSec[rewardTokens[tokenIndex]]);  
             accTokensPerShare = accTokensPerShare.add(tokenReward.mul(ACC_TOKEN_PRECISION).div(lpSupply));
         }
 
-        pending = (user.amount.mul(accTokensPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebts[tokenIndex]).add(
-            user.unpaidRewards[tokenIndex]
+        pending = (user.amount.mul(accTokensPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebts[rewardTokens[tokenIndex]]).add(
+            user.unpaidRewards[rewardTokens[tokenIndex]]
         );
     
         return pending; 
