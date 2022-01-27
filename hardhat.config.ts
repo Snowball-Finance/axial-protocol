@@ -1,57 +1,60 @@
-require("@nomiclabs/hardhat-waffle");
-// require("@nomiclabs/hardhat-etherscan");
+import "dotenv/config"
+import "@nomiclabs/hardhat-waffle"
+import "@nomiclabs/hardhat-etherscan"
 
-require("dotenv").config();
+import { HardhatUserConfig } from "hardhat/config"
 
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
-module.exports = {
-    networks: {
-        hardhat: {
-            accounts: [{ privateKey: process.env.PRIVATE_KEY, balance: "100000000000000000000000" }],
-            chainId: 43114,
-            forking: {
-                //url: "https://node.snowapi.net/ext/bc/C/rpc",
-                url: "https://api.avax.network/ext/bc/C/rpc"
-            },
+if (!process.env.PRIVATE_KEY) {
+  console.log("WARNING: Private key was not read from .env file")
+}
+if (!process.env.SNOWTRACE_KEY) {
+  console.log("WARNING: Snowtrace API key was not read from .env file")
+}
+
+const config: HardhatUserConfig = {
+  solidity: {
+    compilers: [
+      {
+        version: "0.6.12",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
         },
-        fuji: {
-            url: "https://api.avax-test.network/ext/bc/C/rpc",
-            accounts: [process.env.PRIVATE_KEY]
+      },
+    ],
+  },
+  networks: {
+    hardhat: {
+      accounts: [
+        {
+          privateKey: process.env.PRIVATE_KEY || "",
+          balance: "100000000000000000000000",
         },
-        mainnet: {
-            chainId: 43114,
-            url: "https://api.avax.network/ext/bc/C/rpc",
-            accounts: [process.env.PRIVATE_KEY]
-        },
-        AVALANCHE: {
-            chainId: 43114,
-            url: "https://api.avax.network/ext/bc/C/rpc",
-            accounts: [process.env.PRIVATE_KEY]
-        },
+      ],
+      chainId: 43114,
+      forking: {
+        //url: "https://node.snowapi.net/ext/bc/C/rpc",
+        url: "https://api.avax.network/ext/bc/C/rpc",
+      },
     },
-    etherscan: {
-        // Your API key for Snowtrace
-        apiKey: process.env.SNOWTRACE_KEY,
+    fuji: {
+      url: "https://api.avax-test.network/ext/bc/C/rpc",
+      accounts: [process.env.PRIVATE_KEY || ""],
     },
-    solidity: {
-        compilers: [
-            {
-                version: "0.6.12",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 200,
-                    },
-                },
-            },
-        ],
+    mainnet: {
+      chainId: 43114,
+      url: "https://api.avax.network/ext/bc/C/rpc",
+      accounts: [process.env.PRIVATE_KEY || ""],
     },
-    mocha: {
-        timeout: 240000
-    },
-    // vyper: {
-    //   version: "0.2.4",
-    // },
-};
+  },
+  etherscan: {
+    apiKey: process.env.SNOWTRACE_KEY,
+  },
+  mocha: {
+    timeout: 240000,
+  },
+}
+
+export default config
