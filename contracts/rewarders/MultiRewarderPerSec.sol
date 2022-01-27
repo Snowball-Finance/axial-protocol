@@ -238,14 +238,17 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
             uint256 pendingBonusToken
         ){
 
-            // MasterChefAxialV3 mcaContract = MasterChefAxialV3(MCA);
-            // MCAV3UserInfo storage user = mcaContract.userInfo(pid,_user);
-            
-            // MCAV3PoolInfo memory pool = mcaContract.poolInfo(pid);
+            MasterChefAxialV3 mcaContract = MasterChefAxialV3(MCA);
 
-            
-            
+            (uint256 amount, uint256 rewardDebt) = mcaContract.userInfo(pid, _user);
+            MasterChefAxialV3.UserInfo memory user = MasterChefAxialV3.UserInfo(amount, rewardDebt);
 
+            // Should work too
+            //MasterChefAxialV3.UserInfo memory user2 = abi.decode(mcaContract.userInfo(pid, _user), MasterChefAxialV3.UserInfo);
+
+            (IERC20 lpToken, uint256 accAxialPerShare, uint256 lastRewardTimestamp, uint256 allocPoint,IRewarder rewarder) = mcaContract.poolInfo(pid);
+            MasterChefAxialV3.PoolInfo memory pool = MasterChefAxialV3.PoolInfo(lpToken, accAxialPerShare, lastRewardTimestamp, allocPoint, rewarder);
+ 
         }
 
     /// @dev View function to see pending tokens
