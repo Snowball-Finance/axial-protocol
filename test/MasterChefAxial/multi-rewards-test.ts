@@ -101,19 +101,6 @@ const doMultiRewardsTest = () => {
       }) 
 
       it("should deposit an initial amount of the lp token into MCA", async function () {
-         let harvest = null; 
-         let provider = await ethers.getDefaultProvider();
-         let filter = {
-            address: masterchefAxial_addr,
-            topics: [
-                ethers.utils.id("Harvest(address,uint256,uint256)")
-            ]
-        }
-        provider.on(filter, (log: any, event: any) => {
-            // Emitted whenever a DAI token transfer occurs
-            log(`harvest was found!!!!!`);
-        })
-        
          await depositsLPToMasterChef(lp, walletSigner, masterchefAxial_addr, MasterChefAxial);
       })
 

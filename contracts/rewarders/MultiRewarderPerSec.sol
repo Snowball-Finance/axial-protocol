@@ -177,6 +177,8 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         UserInfo storage user = userInfo[_user];
         uint256[] memory pending;
         uint256[] memory difference;
+
+        console.log("we are inside of onaxial reward");
     
         if (user.amount > 0) {
             console.log("WE are inside the loop in the onAxialReward function");

@@ -54,8 +54,8 @@ export async function addNewLP(
 
 export async function depositsLPToMasterChef(assetContract: Contract, walletSigner: Signer, masterchefAxial_addr: string, MasterChefAxial: Contract) {
     // deposit lp into MCA
-    await assetContract.connect(walletSigner).approve(masterchefAxial_addr, 25000000000000000000000);
-    await MasterChefAxial.connect(walletSigner).deposit(6, 25000000000000000000000); 
+    await assetContract.connect(walletSigner).approve(masterchefAxial_addr, "25000000000000000000000");
+    await MasterChefAxial.connect(walletSigner).deposit(6, "25000000000000000000000"); 
 }
 
 
