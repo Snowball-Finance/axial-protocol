@@ -141,15 +141,12 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
 
         if (block.timestamp > pool.lastRewardTimestamp) {
             uint256 lpSupply = IERC20(lpToken).balanceOf(MCA);
-
-            console.log("The number of reward tokens is", rewardTokens.length);
     
             if (lpSupply > 0) {
                 for (uint i = 0; i < rewardTokens.length; i++){
                     uint256 timeElapsed = block.timestamp.sub(pool.lastRewardTimestamp);
                     uint256 tokenReward = timeElapsed.mul(tokensPerSec[rewardTokens[i]]);
                     pool.accTokensPerShare[i] = pool.accTokensPerShare[i].add((tokenReward.mul(ACC_TOKEN_PRECISION) / lpSupply));
-                    console.log("The accTokensPerShare is", pool.accTokensPerShare[i]);
                 }
             }
             pool.lastRewardTimestamp = block.timestamp;
@@ -172,13 +169,11 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
     /// @param _user Address of user
     /// @param _lpAmount Number of LP tokens the user has
     function onAxialReward(address _user, uint256 _lpAmount) external override onlyMCA nonReentrant {
-        updatePool();
+        updatePool(); 
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
         uint256[] memory pending;
         uint256[] memory difference;
-
-        console.log("we are inside of onaxial reward");
     
         if (user.amount > 0) {
             console.log("WE are inside the loop in the onAxialReward function");

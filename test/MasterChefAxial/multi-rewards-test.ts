@@ -1,6 +1,7 @@
 /* eslint-disable no-undef */
 import { Signer, Contract } from "ethers"
 import { expect } from "chai"
+import async from "../../../Library/Caches/typescript/4.5/node_modules/@types/async"
 const { ethers, network } = require("hardhat")
 const { log } = require("../../utils/log")
 const { returnSigner } = require("../../utils/helpers")
@@ -21,6 +22,7 @@ import {
   updateRewardRate,
   addNewLP,
   depositsLPToMasterChef,
+  pendingTokens,
 } from "../mocks/InternalFunctions"
 
 const masterAbi = [
@@ -415,6 +417,7 @@ const doMultiRewardsTest = () => {
       await network.provider.send("hardhat_impersonateAccount", [wallet_addr])
       log(`\timpersonating account: ${wallet_addr}`)
       walletSigner = await returnSigner(wallet_addr)
+
       ;[timelockSigner, governanceSigner] = await setupSigners()
 
       timelock_addr = await timelockSigner.getAddress()
@@ -483,9 +486,13 @@ const doMultiRewardsTest = () => {
       )
     })
 
-    // it("should return the number of tokens pending for each reward token", async function () {
-    //    await pendingRewardTokens(MultiRewarder, wallet_addr);
-    // })
+    it("should return the pending axial on frontend", async function () {
+      await pendingTokens(MasterChefAxial, timelockSigner, wallet_addr)
+    })
+
+    it("should return the number of tokens pending for each reward token", async function () {
+      await pendingRewardTokens(MultiRewarder, wallet_addr)
+    })
 
     // it("should update pool in MultiRewarder Contract", async function () {
     //    await updatePoolInfo(MultiRewarder);

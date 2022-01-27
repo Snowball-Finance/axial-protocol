@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../boringcrypto/BoringOwnable.sol";
 import "../libraries/SafeERC20.sol";
 
+import "hardhat/console.sol";
+
 interface IRewarder {
     using SafeERC20 for IERC20;
 
@@ -147,8 +149,13 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         updatePool();
         PoolInfo memory pool = poolInfo;
         UserInfo storage user = userInfo[_user];
+         console.log("the amount of lp tokens the user has is", user.amount);
+         console.log("the rewardDEbt is", user.rewardDebt);
+         console.log("the unpaidRewards the user has is", user.unpaidRewards);
         uint256 pending;
         if (user.amount > 0) {
+            console.log("the amount of lp tokens the user has is", user.amount);
+            console.log("WE are inside the loop in the onAxialReward function");
             pending = (user.amount.mul(pool.accTokenPerShare) / ACC_TOKEN_PRECISION).sub(user.rewardDebt).add(
                 user.unpaidRewards
             );
@@ -218,6 +225,7 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         if (isNative) {
             return address(this).balance;
         } else {
+            console.log("the balance of reward token is", rewardToken.balanceOf(address(this)));
             return rewardToken.balanceOf(address(this));
         }
     }
