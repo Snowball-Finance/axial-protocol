@@ -20,6 +20,7 @@ import {
   addNewLP,
   depositsLPToMasterChef,
   pendingTokens,
+  pendingMultiTokens
 } from "../mocks/InternalFunctions"
 import { log } from "../../utils/log"
 
@@ -484,16 +485,16 @@ const doMultiRewardsTest = () => {
     })
 
     it("should return the pending axial on frontend", async function () {
-      await pendingTokens(MasterChefAxial, timelockSigner, wallet_addr)
+      await pendingMultiTokens(MasterChefAxial, MultiRewarder, timelockSigner, wallet_addr)
     })
 
     it("should return the number of tokens pending for each reward token", async function () {
       await pendingRewardTokens(MultiRewarder, wallet_addr)
     })
 
-    // it("should update pool in MultiRewarder Contract", async function () {
-    //    await updatePoolInfo(MultiRewarder);
-    // })
+    it("should update pool in MultiRewarder Contract", async function () {
+       await updatePoolInfo(MultiRewarder);
+    })
 
     // it("should update the reward rate of a reward token", async function () {
     //    await updateRewardRate(MultiRewarder, asset1, tokensPerSec);

@@ -87,33 +87,29 @@ const doSimpleRewardsTest = () => {
 
 
 
-    it("should check the SimpleRewarderSec's balance function is returning an array of balances", async function () {
+   it("should check the SimpleRewarderSec's balance function is returning the balance of the reward token", async function () {
          await balance(SimpleRewarder); 
-    })
+   })
 
-    it("should add a new lp to MasterChefAxialV3 ", async function () {
-         await addNewLP(MasterChefAxial, timelockSigner, lp.address, SimpleRewarder); 
-    }) 
+   it("should add a new lp to MasterChefAxialV3 ", async function () {
+      await addNewLP(MasterChefAxial, timelockSigner, lp.address, SimpleRewarder); 
+   }) 
 
-    it("should deposit an initial amount of the lp token into MCA", async function () {
-        await depositsLPToMasterChef(lp, walletSigner, masterchefAxial_addr, MasterChefAxial);
-    })
+   it("should deposit an initial amount of the lp token into MCA", async function () {
+      await depositsLPToMasterChef(lp, walletSigner, masterchefAxial_addr, MasterChefAxial);
+   })
 
-    it("should return the pending axial on frontend", async function () {
-    await pendingTokens(MasterChefAxial, timelockSigner, wallet_addr);
-    })
+   it("should return the pending axial on frontend", async function () {
+   await pendingTokens(MasterChefAxial, timelockSigner, wallet_addr);
+   })
 
-    it("should return the number of tokens pending for each reward token", async function () {
-        await pendingSingleToken(SimpleRewarder, wallet_addr); 
-     })
+   it("should return the number of tokens pending for each reward token", async function () {
+      await pendingSingleToken(SimpleRewarder, wallet_addr); 
+   })
 
-      // it("should return the number of tokens pending for each reward token", async function () {
-      //    await pendingRewardTokens(SimpleRewarder, wallet_addr); 
-      // })
-
-      // it("should update pool in SimpleRewarder Contract", async function () {
-      //    await updatePoolInfo(SimpleRewarder); 
-      // })
+   it("should update pool in SimpleRewarder Contract", async function () {
+      await updatePoolInfo(SimpleRewarder); 
+   })
 
       // it("should update the reward rate of a reward token", async function () {
       //    await updateRewardRate(SimpleRewarder, asset1, tokensPerSec); 

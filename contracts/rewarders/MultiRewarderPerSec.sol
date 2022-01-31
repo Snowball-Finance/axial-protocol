@@ -229,27 +229,29 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         return 0;  
     }
 
-    function pendingMasterChef(uint256 pid, address _user) external view
+    function pendingMasterChef(uint256 pid, address _user, uint256 tokenIndex) external view
         returns (
-            uint256 pendingAxial,
-            uint256 tokenIndex, 
-            address bonusTokenAddress,
+    
+            address bonusTokenAddresses, 
             string memory bonusTokenSymbol,
             uint256 pendingBonusToken
-        ){
+        )
+    {
+        MasterChefAxialV3 mcaContract = MasterChefAxialV3(MCA);
 
-            MasterChefAxialV3 mcaContract = MasterChefAxialV3(MCA);
+        (uint256 amount, uint256 rewardDebt) = mcaContract.userInfo(pid, _user);
+        MasterChefAxialV3.UserInfo memory user = MasterChefAxialV3.UserInfo(amount, rewardDebt);
 
-            (uint256 amount, uint256 rewardDebt) = mcaContract.userInfo(pid, _user);
-            MasterChefAxialV3.UserInfo memory user = MasterChefAxialV3.UserInfo(amount, rewardDebt);
+       
+            // (IERC20 lpToken, uint256 accAxialPerShare, uint256 lastRewardTimestamp,,) = mcaContract.poolInfo(pid);
+            // (, , , uint256 allocPoint, ) = mcaContract.poolInfo(pid);
+            // MasterChefAxialV3.PoolInfo memory pool = MasterChefAxialV3.PoolInfo(lpToken, accAxialPerShare, lastRewardTimestamp, allocPoint,);
+    
+        bonusTokenAddresses = rewardTokens[tokenIndex];
+        bonusTokenSymbol = IERC20(rewardTokens[tokenIndex]).safeSymbol(); 
+        pendingBonusToken = pendingMultiTokens(_user, tokenIndex);
 
-            // Should work too
-            //MasterChefAxialV3.UserInfo memory user2 = abi.decode(mcaContract.userInfo(pid, _user), MasterChefAxialV3.UserInfo);
-
-            (IERC20 lpToken, uint256 accAxialPerShare, uint256 lastRewardTimestamp, uint256 allocPoint,IRewarder rewarder) = mcaContract.poolInfo(pid);
-            MasterChefAxialV3.PoolInfo memory pool = MasterChefAxialV3.PoolInfo(lpToken, accAxialPerShare, lastRewardTimestamp, allocPoint, rewarder);
- 
-        }
+    }
 
     /// @dev View function to see pending tokens
     /// @param _user Address of user.
