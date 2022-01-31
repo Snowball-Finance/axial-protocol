@@ -12,7 +12,8 @@
   },
   "scripts": {
     "flatten": "npx sol-merger \"./src/**/*.sol\" ./build",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "compile": "hardhat compile"
   },
   "devDependencies": {
     "@eth-optimism/smock": "^1.1.5",
