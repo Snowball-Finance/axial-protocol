@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IERC20.sol";
 
+import "hardhat/console.sol";
+
 interface IMasterChef {
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
