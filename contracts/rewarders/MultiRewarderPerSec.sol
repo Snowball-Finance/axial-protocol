@@ -229,6 +229,8 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         return 0;  
     }
 
+    /// makeshift pendingTokens in MultiRewarder for emulating pendingTokens in MCA so that we can try 
+    /// and access the userInfo and poolInfo
     function pendingMasterChef(uint256 pid, address _user, uint256 tokenIndex) external view
         returns (
     

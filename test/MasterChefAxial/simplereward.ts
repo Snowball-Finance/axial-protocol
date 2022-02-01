@@ -85,8 +85,6 @@ const doSimpleRewardsTest = () => {
       });
 
 
-
-
    it("should check the SimpleRewarderSec's balance function is returning the balance of the reward token", async function () {
          await balance(SimpleRewarder); 
    })

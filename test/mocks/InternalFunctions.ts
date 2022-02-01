@@ -5,7 +5,7 @@ import {Contract, Signer} from "ethers";
 import { generateToken, getCurrentTimestamp } from "../../utils/static";
 import { fastForwardAWeek} from "../../utils/helpers";
 
-
+// adds a reward token to our array of rewards for MultiRewarder Contract 
 export async function addRewardToken(
     MultiRewarder: Contract, 
     governanceSigner: Signer, 
@@ -36,32 +36,45 @@ export async function balanceOfRewardTokens(MultiRewarder: Contract) {
     }
 }
 
+// returns the balance of the reward token for our Simple Rewarder Contract 
 export async function balance(SimpleRewarder: Contract) {
-    await SimpleRewarder.balance(); 
+    const balance = await SimpleRewarder.balance(); 
+    log(`\tThe initial balance of our reward token before any deposit is: ${balance}`); 
+    const BN = ethers.BigNumber.from(balance)._hex.toString();
+    expect(balance).to.be.equals(BN); 
 }
 
+// adds a new lp token to our Master Chef Contract so that we can perform all the MCA functions on the Rewarder Contract 
 export async function addNewLP(
     MasterChefAxial: Contract, 
     timelockSigner: Signer, 
     lp: string, 
-    MultiRewarder: Contract, 
+    Rewarder: Contract, 
 ) {
     let numOfPoolsBefore = await MasterChefAxial.connect(timelockSigner).poolLength();
-    //log(`\tThe number of pools of MCA before a new lp is added is: ${numOfPoolsBefore}`); 
+    log(`\tThe number of pools of MCA before a new lp is added is: ${numOfPoolsBefore}`); 
 
     // adding a new lp to the pool  
-    await MasterChefAxial.connect(timelockSigner).add("10000", lp, MultiRewarder.address); 
+    await MasterChefAxial.connect(timelockSigner).add("10000", lp, Rewarder.address); 
     let numOfPoolsAfter = await MasterChefAxial.connect(timelockSigner).poolLength();
-    //log(`\tThe number of pools of MCA after a new lp is added is: ${numOfPoolsAfter}`); 
+    log(`\tThe number of pools of MCA after a new lp is added is: ${numOfPoolsAfter}`); 
     expect(numOfPoolsAfter).to.be.equals(numOfPoolsBefore.add(1));
 }
 
-export async function depositsLPToMasterChef(assetContract: Contract, walletSigner: Signer, masterchefAxial_addr: string, MasterChefAxial: Contract) {
+// deposits an initial lp token value into MCA
+export async function depositsLPToMasterChef(
+    assetContract: Contract, 
+    walletSigner: Signer, 
+    masterchefAxial_addr: string, 
+    MasterChefAxial: Contract
+    ) 
+{
     // deposit lp into MCA
     await assetContract.connect(walletSigner).approve(masterchefAxial_addr, "25000000000000000000000");
     await MasterChefAxial.connect(walletSigner).deposit(6, "25000000000000000000000"); 
 }
 
+// call to pendingTokens function in MCA which updates the pool and user information on Rewarder Contract
 export async function pendingTokens(MasterChefAxial: Contract, timelockSigner: Signer, wallet_addr: string ) {
     let pending1 = await MasterChefAxial.connect(timelockSigner).pendingTokens(6, wallet_addr);
     log(`the amount of tokens pending is ${pending1}`);
@@ -72,6 +85,7 @@ export async function pendingTokens(MasterChefAxial: Contract, timelockSigner: S
     expect(pending1.pendingAxial).to.be.lt(pending2.pendingAxial);
 }
 
+// call to makeshift pendingTokens in MultiRewarder for emulating pendingTokens in MCA
 export async function pendingMultiTokens(MasterChefAxial: Contract, MultiRewarder: Contract, timelockSigner: Signer, wallet_addr: string ) {
   
     const numOfRewards = await MultiRewarder.rewardTokensLength();
@@ -93,10 +107,9 @@ export async function pendingMultiTokens(MasterChefAxial: Contract, MultiRewarde
 }
 
 
-// Gives the number of reward tokens pending 
+// Gives the number of reward tokens pending in Multi Rewarder Contract
 export async function pendingRewardTokens(MultiRewarder: Contract, wallet_addr: string) {
-    
-    //await MultiRewarder.pendingMasterChef(6, wallet_addr); 
+ 
     const numOfRewards = await MultiRewarder.rewardTokensLength();
     for (let i = 0; i < numOfRewards; i++){
         const pending = await MultiRewarder.pendingMultiTokens(wallet_addr, i); 
@@ -104,6 +117,7 @@ export async function pendingRewardTokens(MultiRewarder: Contract, wallet_addr: 
     } 
 }
 
+// Gives the number of reward tokens pending on Simple Rewarder Contract
 export async function pendingSingleToken(SimpleRewarder: Contract, wallet_addr: string) {
     const pending = await SimpleRewarder.pendingTokens(wallet_addr); 
     log(`\t💸The pending tokens for each reward token are: ${pending}`);
@@ -122,6 +136,8 @@ export async function updatePoolInfo(MultiRewarder: Contract) {
     // we expect the current timestamp to be less than the lastRewardTimestamp 
     log(`Updated pool info:`);
     log(info);
+    log(`Updated pool info2:`)
+    log(poolInfo);
     // log(`The last reward timestamp is ${poolInfo["lastRewardTimestamp"]}`); 
     // expect(poolInfo["lastRewardTimestamp"]).to.be.gt(currentTime); 
 
