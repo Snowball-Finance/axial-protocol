@@ -16,6 +16,17 @@ contract StakingVe {
     string private Name; // New asset after staking (i.e. sAxial)
     string private Symbol; // New asset symbol after staking (i.e. sAXIAL)
 
+    /// @dev reentrancy guard
+    uint8 internal constant _not_entered = 1;
+    uint8 internal constant _entered = 2;
+    uint8 internal _entered_state = 1;
+    modifier nonreentrant() {
+        require(_entered_state == _not_entered);
+        _entered_state = _entered;
+        _;
+        _entered_state = _not_entered;
+    }
+
     // Lock structure, a user can create many of these given a future start/end block
     // A DELTA can be derived as the degree of interpolation between the start/end block:
     // Delta = (end - now) / end - start
@@ -44,7 +55,7 @@ contract StakingVe {
     }
 
     // Allow user to lock _amount from now until now + _duration
-    function CreateLock(uint256 _duration, uint256 _amount) external {
+    function CreateLock(uint256 _duration, uint256 _amount) external nonreentrant {
         address userAddr = msg.sender;
         LockVe[] memory preExistingLocks = Locks[userAddr];
 
@@ -70,7 +81,7 @@ contract StakingVe {
     }
 
     // Return the amount of tokens the user still has locked
-    function GetMyBalance() external view returns (uint256) {
+    function GetMyBalance() public view returns (uint256) {
         address userAddr = msg.sender;
         LockVe[] memory preExistingLocks = Locks[userAddr];
 
@@ -83,7 +94,7 @@ contract StakingVe {
             if (lock.EndBlockTime > currentTimestamp) {
                 // We need to accomodate for the fact that we are dealing only in whole numbers
                 // uint256 delta = (lock.EndBlockTime - currentTimestamp) / (lock.EndBlockTime - lock.StartBlockTime);
-                uint256 granularity = 1e18;
+                uint256 granularity = 1e18; // use decimals for tokens instead of hardcoded value
                 uint256 granularDelta = ((lock.EndBlockTime - currentTimestamp) * granularity) / (lock.EndBlockTime - lock.StartBlockTime);
                 balance += lock.StartingAmountLocked * granularDelta / granularity;
             }
