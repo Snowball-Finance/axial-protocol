@@ -3,6 +3,9 @@ import { DeployFunction } from "hardhat-deploy/types"
 import { CHAIN_ID } from "../utils/network"
 
 const MERKLE_ROOT = {
+// TODO
+//  [CHAIN_ID.AVALANCHE]:
+//    "0xc799ec3a26ef7b4c295f6f02d1e6f65c35cef24447ff343076060bfc0eafb24e",
   [CHAIN_ID.MAINNET]:
     "0xc799ec3a26ef7b4c295f6f02d1e6f65c35cef24447ff343076060bfc0eafb24e",
   [CHAIN_ID.HARDHAT]:
