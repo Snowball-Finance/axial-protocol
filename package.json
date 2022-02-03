@@ -36,7 +36,6 @@
     "hardhat-deploy": "^0.7.11",
     "hardhat-gas-reporter": "^1.0.4",
     "hardhat-spdx-license-identifier": "^2.0.3",
-    "husky": "^7.0.1",
     "lint-staged": "^11.0.0",
     "prettier": "^2.3.0",
     "prettier-plugin-solidity": "^1.0.0-beta.11",
@@ -67,22 +66,9 @@
     "fork": "export FORK_MAINNET=true && hardhat node --fork-deployments mainnet --as-network localhost --show-accounts ; unset FORK_MAINNET",
     "prepare": "npm run build"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "config": {
     "eslintPaths": "test/ deploy/"
   },
-  "keywords": [
-    "cryptocurrency",
-    "interoperability",
-    "bitcoin",
-    "ethereum",
-    "tbtc",
-    "defi"
-  ],
   "license": "MIT",
   "lint-staged": {
     "*.ts": "eslint --cache --fix"
