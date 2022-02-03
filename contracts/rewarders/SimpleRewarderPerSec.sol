@@ -7,18 +7,20 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "../boringcrypto/BoringOwnable.sol";
 import "../libraries/SafeERC20.sol";
+import  "../MasterChefAxialV3.sol";
+
 
 import "hardhat/console.sol";
 
-interface IRewarder {
-    using SafeERC20 for IERC20;
+// interface IRewarder {
+//     using SafeERC20 for IERC20;
 
-    function onAxialReward(address user, uint256 newLpAmount) external;
+//     function onAxialReward(address user, uint256 newLpAmount) external;
 
-    function pendingTokens(address user) external view returns (uint256 pending);
+//     function pendingTokens(address user) external view returns (uint256 pending);
 
-    function rewardToken() external view returns (IERC20);
-}
+//     function rewardToken() external view returns (IERC20);
+// }
 
 interface IMasterChefAxial {
     using SafeERC20 for IERC20;
@@ -188,6 +190,30 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         emit OnReward(_user, pending - user.unpaidRewards);
     }
 
+    /// makeshift pendingTokens in MultiRewarder for emulating pendingTokens in MCA so that we can try 
+    /// and access the userInfo and poolInfo
+    function pendingMasterChef(uint256 pid, address _user) external view
+      
+    {
+        MasterChefAxialV3 mcaContract = MasterChefAxialV3(address(MCA));
+
+        (uint256 amount, uint256 rewardDebt) = mcaContract.userInfo(pid, _user);
+        MasterChefAxialV3.UserInfo memory user = MasterChefAxialV3.UserInfo(amount, rewardDebt);
+
+        console.log("The userInfo.Amount is: %s, The userInfo.rewardDebt is: %s", amount, rewardDebt);
+     
+
+       
+            // (IERC20 lpToken, uint256 accAxialPerShare, uint256 lastRewardTimestamp,,) = mcaContract.poolInfo(pid);
+            // (, , , uint256 allocPoint, ) = mcaContract.poolInfo(pid);
+            // MasterChefAxialV3.PoolInfo memory pool = MasterChefAxialV3.PoolInfo(lpToken, accAxialPerShare, lastRewardTimestamp, allocPoint,);
+    
+
+        
+
+    }
+
+
     /// @dev View function to see pending tokens
     /// @param _user Address of user.
     /// @return pending reward for a given user.
@@ -197,6 +223,8 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
 
         uint256 accTokenPerShare = pool.accTokenPerShare;
         uint256 lpSupply = lpToken.balanceOf(address(MCA));
+
+        console.log("The user.rewardDebt is", user.rewardDebt); 
 
         console.log("The lp supply is", lpSupply);
 
@@ -229,7 +257,6 @@ contract SimpleRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard {
         if (isNative) {
             return address(this).balance;
         } else {
-            console.log("the balance of reward token is", rewardToken.balanceOf(address(this)));
             return rewardToken.balanceOf(address(this));
         }
     }

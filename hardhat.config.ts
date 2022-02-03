@@ -2,7 +2,6 @@ import "dotenv/config"
 import "@nomiclabs/hardhat-waffle"
 import "@nomiclabs/hardhat-etherscan"
 
-import '@typechain/hardhat'
 import '@nomiclabs/hardhat-ethers'
 
 import { HardhatUserConfig } from "hardhat/config"
@@ -58,10 +57,6 @@ const config: HardhatUserConfig = {
   mocha: {
     timeout: 240000,
   },
-  typechain: {
-    outDir: "types",
-    target: "ethers-v5"
-  }
   
 }
 

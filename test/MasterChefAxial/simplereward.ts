@@ -94,11 +94,11 @@ const doSimpleRewardsTest = () => {
    }) 
 
    it("should deposit an initial amount of the lp token into MCA", async function () {
-      await depositsLPToMasterChef(lp, walletSigner, masterchefAxial_addr, MasterChefAxial);
+      await depositsLPToMasterChef(lp, walletSigner, wallet_addr, masterchefAxial_addr, MasterChefAxial, timelockSigner);
    })
 
    it("should return the pending axial on frontend", async function () {
-   await pendingTokens(MasterChefAxial, timelockSigner, wallet_addr);
+   await pendingTokens(SimpleRewarder, timelockSigner, wallet_addr);
    })
 
    it("should return the number of tokens pending for each reward token", async function () {

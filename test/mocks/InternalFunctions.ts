@@ -12,17 +12,18 @@ export async function addRewardToken(
     tokenPerSec: string, 
     wallet_addr: string, 
     walletSigner: Signer
-) {
-
+) 
+{
     let numOfRewards = await MultiRewarder.connect(governanceSigner).rewardTokensLength(); 
-    log(`the number of reward tokens before adding a new reward token is ${numOfRewards}`);
+    //log(`\tthe number of reward tokens before adding a new reward token is ${numOfRewards}`);
     // Generate four new reward tokens
     let token = await generateToken("Token", "T", wallet_addr, walletSigner);
     await MultiRewarder.connect(governanceSigner).addRewardToken(token, tokenPerSec);
     let numOfRewards2 = await MultiRewarder.connect(governanceSigner).rewardTokensLength(); 
-    log(`the number of reward tokens after adding a new reward token is ${numOfRewards2}`);
+    //log(`\tthe number of reward tokens after adding a new reward token is ${numOfRewards2}`);
     expect(numOfRewards2).to.be.equals((numOfRewards).add(1)); 
 }
+
 
 // Updates the balance of the reward token 
 export async function balanceOfRewardTokens(MultiRewarder: Contract) {
@@ -31,7 +32,6 @@ export async function balanceOfRewardTokens(MultiRewarder: Contract) {
         // Checks the balance of our reward tokens 
         let balance = await MultiRewarder.balance(i); 
         const BN = ethers.BigNumber.from(balance)._hex.toString();
-        log(`the balances are ${balance}`); 
         expect(balance).to.be.equals(BN);    
     }
 }
@@ -39,7 +39,6 @@ export async function balanceOfRewardTokens(MultiRewarder: Contract) {
 // returns the balance of the reward token for our Simple Rewarder Contract 
 export async function balance(SimpleRewarder: Contract) {
     const balance = await SimpleRewarder.balance(); 
-    log(`\tThe initial balance of our reward token before any deposit is: ${balance}`); 
     const BN = ethers.BigNumber.from(balance)._hex.toString();
     expect(balance).to.be.equals(BN); 
 }
@@ -52,12 +51,12 @@ export async function addNewLP(
     Rewarder: Contract, 
 ) {
     let numOfPoolsBefore = await MasterChefAxial.connect(timelockSigner).poolLength();
-    log(`\tThe number of pools of MCA before a new lp is added is: ${numOfPoolsBefore}`); 
+    //log(`\tThe number of pools of MCA before a new lp is added is: ${numOfPoolsBefore}`); 
 
     // adding a new lp to the pool  
     await MasterChefAxial.connect(timelockSigner).add("10000", lp, Rewarder.address); 
     let numOfPoolsAfter = await MasterChefAxial.connect(timelockSigner).poolLength();
-    log(`\tThe number of pools of MCA after a new lp is added is: ${numOfPoolsAfter}`); 
+    //log(`\tThe number of pools of MCA after a new lp is added is: ${numOfPoolsAfter}`); 
     expect(numOfPoolsAfter).to.be.equals(numOfPoolsBefore.add(1));
 }
 
@@ -65,22 +64,31 @@ export async function addNewLP(
 export async function depositsLPToMasterChef(
     assetContract: Contract, 
     walletSigner: Signer, 
+    wallet_addr: string,
     masterchefAxial_addr: string, 
-    MasterChefAxial: Contract
+    MasterChefAxial: Contract,  
+    timelockSigner: Signer
     ) 
 {
     // deposit lp into MCA
+    let amt = await assetContract.connect(walletSigner).balanceOf(wallet_addr);
     await assetContract.connect(walletSigner).approve(masterchefAxial_addr, "25000000000000000000000");
-    await MasterChefAxial.connect(walletSigner).deposit(6, "25000000000000000000000"); 
+    await MasterChefAxial.connect(walletSigner).deposit(6, "12500000000000000000000"); 
+    const bal = await assetContract.connect(timelockSigner).balanceOf(masterchefAxial_addr);
+    expect(bal).to.be.equals((amt).div(2)); 
 }
+
 
 // call to pendingTokens function in MCA which updates the pool and user information on Rewarder Contract
 export async function pendingTokens(MasterChefAxial: Contract, timelockSigner: Signer, wallet_addr: string ) {
-    let pending1 = await MasterChefAxial.connect(timelockSigner).pendingTokens(6, wallet_addr);
+    await MasterChefAxial.pendingMasterChef(6, wallet_addr);
+    let pending1 = await MasterChefAxial.pendingTokens(wallet_addr); 
     log(`the amount of tokens pending is ${pending1}`);
+
     await fastForwardAWeek();
 
-    let pending2 = await MasterChefAxial.connect(timelockSigner).pendingTokens(6, wallet_addr);
+   await MasterChefAxial.pendingMasterChef(6, wallet_addr);
+   let pending2 = await MasterChefAxial.pendingTokens(wallet_addr); 
     log(`the amount of tokens pending after a week is ${pending2}`);
     expect(pending1.pendingAxial).to.be.lt(pending2.pendingAxial);
 }
@@ -142,8 +150,6 @@ export async function updatePoolInfo(MultiRewarder: Contract) {
     // expect(poolInfo["lastRewardTimestamp"]).to.be.gt(currentTime); 
 
     // log(`The acc tokens per share  is ${poolInfo["accTokensPerShare"]}`); 
-
-   
     
 }
 

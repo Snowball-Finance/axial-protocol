@@ -190,7 +190,10 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         UserInfo storage user = userInfo[_user];
         uint256[] memory pending;
         uint256[] memory difference;
-    
+        console.log("we are inside onAxialReward");
+        console.log("the amount of lp tokens the user has is", user.amount);
+        console.log("the rewardDEbt is", user.rewardDebts[rewardTokens[0]]);
+        console.log("the unpaidRewards the user has is", user.unpaidRewards[rewardTokens[0]]);
         if (user.amount > 0) {
             console.log("WE are inside the loop in the onAxialReward function");
             for (uint i = 0; i < rewardTokens.length; i++){
@@ -244,6 +247,9 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         (uint256 amount, uint256 rewardDebt) = mcaContract.userInfo(pid, _user);
         MasterChefAxialV3.UserInfo memory user = MasterChefAxialV3.UserInfo(amount, rewardDebt);
 
+        console.log("The userInfo.Amount is: %s, The userInfo.rewardDebt is: %s", amount, rewardDebt);
+     
+
        
             // (IERC20 lpToken, uint256 accAxialPerShare, uint256 lastRewardTimestamp,,) = mcaContract.poolInfo(pid);
             // (, , , uint256 allocPoint, ) = mcaContract.poolInfo(pid);
@@ -252,6 +258,7 @@ contract MultiRewarderPerSec is IRewarder, BoringOwnable, ReentrancyGuard, Proto
         bonusTokenAddresses = rewardTokens[tokenIndex];
         bonusTokenSymbol = IERC20(rewardTokens[tokenIndex]).safeSymbol(); 
         pendingBonusToken = pendingMultiTokens(_user, tokenIndex);
+        
 
     }
 
