@@ -10,6 +10,7 @@ export function isMainnet(networkId: string): boolean {
   return networkId == CHAIN_ID.MAINNET
 }
 
+// TODO
 //export function isAvalanche(networkId: string): boolean {
 //  return networkId == CHAIN_ID.AVALANCHE
 //}
