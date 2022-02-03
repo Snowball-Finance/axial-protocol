@@ -83,7 +83,6 @@
     "tbtc",
     "defi"
   ],
-  "author": "Satoshi Nakamoto 🤪",
   "license": "MIT",
   "lint-staged": {
     "*.ts": "eslint --cache --fix"
