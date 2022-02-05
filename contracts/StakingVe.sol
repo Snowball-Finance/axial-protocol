@@ -4,17 +4,21 @@ pragma experimental ABIEncoderV2;
 
 // We have to maintain old versions of this to use legacy solidity (0.6.12)
 // Otherwise it's safe to link with @OpenZeppelin/
+
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./libraries/SafeERC20.sol";
 import "./libraries/SafeMath.sol";
 
-contract StakingVe {
+contract StakingVe is ERC20 {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
+    uint256 internal constant MAX_DURATION = 2*((3600*24)*365);
+
     address private StakedToken; // An ERC20 Token to be staked (i.e. Axial)
     address private Governance; // Who has administrative access
-    string private Name; // New asset after staking (i.e. sAxial)
-    string private Symbol; // New asset symbol after staking (i.e. sAXIAL)
+//    string private Name; // New asset after staking (i.e. sAxial)
+//    string private Symbol; // New asset symbol after staking (i.e. sAXIAL)
 
     /// @dev reentrancy guard
     uint8 internal constant _not_entered = 1;
@@ -42,11 +46,13 @@ contract StakingVe {
     mapping(address => LockVe[]) private Locks; // A mapping of each users locks
     mapping(address => uint256) private LockedFunds; // A mapping of each users total deposited funds
 
-    constructor(address _stakedToken, string memory _name, string memory _symbol) public {
-        Governance = msg.sender;
-        StakedToken = _stakedToken;
-        Name = _name;
-        Symbol = _symbol;
+    constructor(
+       address _axial, string memory _name, string memory _symbol, address _governance
+    ) ERC20(_name, _symbol) public {
+        Governance = _governance;
+        StakedToken = _axial;
+//        Name = _name;
+//        Symbol = _symbol;
     }
 
     modifier onlyGovernance {
@@ -56,6 +62,12 @@ contract StakingVe {
 
     // Allow user to lock _amount from now until now + _duration
     function CreateLock(uint256 _duration, uint256 _amount) external nonreentrant {
+        require(_duration <= MAX_DURATION, "max lock duration exceeded"); 
+        require(_duration > 0, "duration must be nonzero"); 
+        require(_amount > 0, "invalid lock amount");
+        
+        IERC20(StakedToken).safeTransferFrom(msg.sender, _amount);
+
         address userAddr = msg.sender;
         LockVe[] memory preExistingLocks = Locks[userAddr];
 
