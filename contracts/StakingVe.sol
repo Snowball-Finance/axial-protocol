@@ -103,7 +103,7 @@ contract StakingVe {
             if (lock.EndBlockTime > currentTimestamp) {
                 // We need to accomodate for the fact that we are dealing only in whole numbers
                 // uint256 delta = (lock.EndBlockTime - currentTimestamp) / (lock.EndBlockTime - lock.StartBlockTime);
-                uint256 startingAmountAwarded = (lock.EndBlockTime - lock.StartBlockTime) * lock.StartingAmountLocked / 2 years;
+                uint256 startingAmountAwarded = (lock.EndBlockTime - lock.StartBlockTime) * lock.StartingAmountLocked / 104 weeks;
                 uint256 granularDelta = ((lock.EndBlockTime - currentTimestamp) * InterpolationGranularity) / (lock.EndBlockTime - lock.StartBlockTime);
                 power += startingAmountAwarded * granularDelta / InterpolationGranularity;
             }
@@ -115,7 +115,7 @@ contract StakingVe {
     // in: _userAddr - address of any user to view all Locks they have ever created
     // This may be used by the web application for graphical illustration purposes
     // see also: GetMyLocks()
-    function GetLocks(address _userAddr) external view returns (LockVe[] memory) {
+    function GetLocks(address _userAddr) public view returns (LockVe[] memory) {
         return Locks[_userAddr];
     }
 
@@ -123,7 +123,7 @@ contract StakingVe {
     // Retrieves a list of all locks the invoking user has ever created
     // This may be used by the web application for graphical illustration purposes
     // see also: GetLocks(address _userAddr)
-    function GetMyLocks() external view returns (LockVe[] memory) {
+    function GetMyLocks() public view returns (LockVe[] memory) {
         address userAddr = msg.sender;
         return GetLocks(userAddr);
     }
