@@ -12,8 +12,6 @@ contract StakingVe {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    uint256 internal constant TWO_YEARS = 2 * 3600 * 24 * 365;
-
     // Info pertaining to staking contract
     address private StakedToken; // An ERC20 Token to be staked (i.e. Axial)
     address private Governance; // Who has administrative access
@@ -105,7 +103,7 @@ contract StakingVe {
             if (lock.EndBlockTime > currentTimestamp) {
                 // We need to accomodate for the fact that we are dealing only in whole numbers
                 // uint256 delta = (lock.EndBlockTime - currentTimestamp) / (lock.EndBlockTime - lock.StartBlockTime);
-                uint256 startingAmountAwarded = (lock.EndBlockTime - lock.StartBlockTime) * lock.StartingAmountLocked / TWO_YEARS;
+                uint256 startingAmountAwarded = (lock.EndBlockTime - lock.StartBlockTime) * lock.StartingAmountLocked / 2 years;
                 uint256 granularDelta = ((lock.EndBlockTime - currentTimestamp) * InterpolationGranularity) / (lock.EndBlockTime - lock.StartBlockTime);
                 power += startingAmountAwarded * granularDelta / InterpolationGranularity;
             }
@@ -117,7 +115,7 @@ contract StakingVe {
     // in: _userAddr - address of any user to view all Locks they have ever created
     // This may be used by the web application for graphical illustration purposes
     // see also: GetMyLocks()
-    function GetLocks(address _userAddr) internal view returns (LockVe[] memory) {
+    function GetLocks(address _userAddr) external view returns (LockVe[] memory) {
         return Locks[_userAddr];
     }
 
@@ -125,7 +123,7 @@ contract StakingVe {
     // Retrieves a list of all locks the invoking user has ever created
     // This may be used by the web application for graphical illustration purposes
     // see also: GetLocks(address _userAddr)
-    function GetMyLocks() public view returns (LockVe[] memory) {
+    function GetMyLocks() external view returns (LockVe[] memory) {
         address userAddr = msg.sender;
         return GetLocks(userAddr);
     }
@@ -158,7 +156,6 @@ contract StakingVe {
         uint256 currentBalance = GetMyBalance();
         uint256 fundsToClaim = totalFundsDeposited - currentBalance;
 
-        // not working
         IERC20(StakedToken).safeTransfer(userAddr, fundsToClaim);
 
         LockedFunds[userAddr] = currentBalance;
@@ -172,16 +169,14 @@ contract StakingVe {
     // The quantity of governance tokens is defined as:
     // amountLocked * (timeRemaining / 2 years)
     function CreateLock(uint256 _duration, uint256 _amount) external nonreentrant {
-        require(_amount > 0, 'invalid lock amount');
-        require(_duration > 0, 'duration must be nonzero');
-        require(_duration <= TWO_YEARS, '>2 years');
+        require(_duration <= 52 weeks, ">52 weeks");
 
         // Retrieve list of locks the user has already created
         address userAddr = msg.sender;
         LockVe[] memory preExistingLocks = Locks[userAddr];
 
         // Receive the users tokens
-        //require(IERC20(StakedToken).balanceOf(userAddr) >= _amount, "!balance"); // TODO: remove if the following line makes this redundant
+        require(IERC20(StakedToken).balanceOf(userAddr) >= _amount, "!balance"); // TODO: remove if the following line makes this redundant
         IERC20(StakedToken).safeTransferFrom(userAddr, _amount);
 
         // Maintain a list of all users.  If they are new, the mapping will return an empty array of locks.
@@ -198,10 +193,6 @@ contract StakingVe {
         Locks[userAddr].push(newLock);
 
         LockedFunds[userAddr] += _amount;
-    }
-
-    function getLocked(address _address) public view returns (uint256) {
-      return LockedFunds[_address];
     }
 
 }
