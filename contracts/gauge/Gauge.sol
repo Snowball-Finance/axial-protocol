@@ -18,10 +18,10 @@ contract Gauge is ProtocolGovernance, ReentrancyGuard {
     event RewardAdded(uint256 reward);
 
     IERC20 public constant AXIAL = IERC20(0xcF8419A615c57511807236751c0AF38Db4ba3351); 
-    IERC20 public XAXIAL; 
     IERC20 public constant TREASURY = IERC20(0x4980AD7cCB304f7d3c5053Aa1131eD1EDaf48809);
 
-    IERC20 public immutable TOKEN;
+    IERC20 public XAXIAL = IERC20(0xcF8419A615c57511807236751c0AF38Db4ba3351); // TODO: Fix this
+    IERC20 public immutable TOKEN = IERC20(0xcF8419A615c57511807236751c0AF38Db4ba3351); // TODO: Fix this
 
     address[] rewardTokens; 
     address public DISTRIBUTION;
@@ -142,7 +142,7 @@ contract Gauge is ProtocolGovernance, ReentrancyGuard {
         _totalSupply = _totalSupply.add(amount);
         _balances[account] = _balances[account].add(amount);
         emit Staked(account, amount);
-        TOKEN.safeTransferFrom(account, address(this), amount);
+        TOKEN.safeTransferFrom(account, amount);
     }
 
     function depositAll() external {
@@ -191,7 +191,7 @@ contract Gauge is ProtocolGovernance, ReentrancyGuard {
     }
 
     function notifyRewardAmount(uint256 reward, uint tokenIndex) external onlyDistribution updateReward(address(0)) {
-        AXIAL.safeTransferFrom(DISTRIBUTION, address(this), reward);
+        AXIAL.safeTransferFrom(DISTRIBUTION, reward);
         if (block.timestamp >= periodFinish) {
             rewardRates[rewardTokens[tokenIndex]] = reward.div(DURATION);
         } else {

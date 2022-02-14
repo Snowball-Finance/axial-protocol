@@ -21,6 +21,7 @@ MurlocToken*.*
 FishToken*.*
 deployments/localhost/
 contracts/.deps/
+yarn.lock
 
 .idea
 docs
