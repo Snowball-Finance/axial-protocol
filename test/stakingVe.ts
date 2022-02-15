@@ -245,60 +245,7 @@ describe("StakingVe", () => {
   //   await expect(stakingVe.connect(alice).ExtendMyLock(0, 1)).to.be.revertedWith('>2 years');
   // });
 
-  it("User can create a gigafuckton of locks", async () => {
-    // Alice's holiday bonus
-    await axialTokenMock
-      .connect(deployer)
-      .mints([await alice.getAddress()], [99999999])
-    await axialTokenMock.connect(alice).approve(stakingVe.address, "99999999")
-
-    for (let i = 0; i < 1000; ++i) {
-      await stakingVe
-        .connect(alice)
-        .CreateLock(SECONDS_IN_A_YEAR * 2, (10 + i).toString())
-      await increaseTimestamp(SECONDS_IN_A_WEEK)
-      await stakingVe.connect(alice).ClaimMyFunds()
-
-      const balance = await stakingVe.connect(alice).GetMyBalance()
-      const power = await stakingVe.connect(alice).GetMyPower()
-      const inWallet = await axialTokenMock.balanceOf(await alice.getAddress())
-      console.log(
-        "Week %d, Balance: %d Power: %d, Wallet: %d",
-        i,
-        balance,
-        power,
-        inWallet,
-      )
-    }
-  })
-
-  it.only("User can create a new lock every day with their rewards", async () => {
-    // Alice's holiday bonus
-    await axialTokenMock
-      .connect(deployer)
-      .mints([await alice.getAddress()], [90])
-
-    for (let i = 0; i < 1000; ++i) {
-      let inWallet = await axialTokenMock.balanceOf(await alice.getAddress())
-      await axialTokenMock.connect(alice).approve(stakingVe.address, inWallet)
-      await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR * 2, inWallet)
-      await stakingVe.connect(alice).ClaimMyFunds()
-      await increaseTimestamp(SECONDS_IN_A_DAY)
-
-      const balance = await stakingVe.connect(alice).GetMyBalance()
-      const power = await stakingVe.connect(alice).GetMyPower()
-      inWallet = await axialTokenMock.balanceOf(await alice.getAddress())
-      console.log(
-        "Day %d, Balance: %d Power: %d, Wallet: %d",
-        i,
-        balance,
-        power,
-        inWallet,
-      )
-    }
-  })
-
-  // it("Balance, Power linearly decay over time and can be claimed repeatedly with lock time increasing", async () => {
+  // it.only("Balance, Power linearly decay over time and can be claimed repeatedly with lock time increasing", async () => {
 
   //   // Give alice a holiday bonus
   //   await axialTokenMock.connect(deployer).mints([await alice.getAddress()], [90]);
@@ -328,6 +275,59 @@ describe("StakingVe", () => {
   //     //expect(balance).to.eq(power);
   //   }
   // });
+
+  // it("User can create a large quantity of locks", async () => {
+  //   // Alice's holiday bonus
+  //   await axialTokenMock
+  //     .connect(deployer)
+  //     .mints([await alice.getAddress()], [99999999])
+  //   await axialTokenMock.connect(alice).approve(stakingVe.address, "99999999")
+
+  //   for (let i = 0; i < 1000; ++i) {
+  //     await stakingVe
+  //       .connect(alice)
+  //       .CreateLock(SECONDS_IN_A_YEAR * 2, (10 + i).toString())
+  //     await increaseTimestamp(SECONDS_IN_A_WEEK)
+  //     await stakingVe.connect(alice).ClaimMyFunds()
+
+  //     const balance = await stakingVe.connect(alice).GetMyBalance()
+  //     const power = await stakingVe.connect(alice).GetMyPower()
+  //     const inWallet = await axialTokenMock.balanceOf(await alice.getAddress())
+  //     console.log(
+  //       "Week %d, Balance: %d Power: %d, Wallet: %d",
+  //       i,
+  //       balance,
+  //       power,
+  //       inWallet,
+  //     )
+  //   }
+  // })
+
+  // it("User can create a new lock every day with their rewards", async () => {
+  //   // Alice's holiday bonus
+  //   await axialTokenMock
+  //     .connect(deployer)
+  //     .mints([await alice.getAddress()], [90])
+
+  //   for (let i = 0; i < 1000; ++i) {
+  //     let inWallet = await axialTokenMock.balanceOf(await alice.getAddress())
+  //     await axialTokenMock.connect(alice).approve(stakingVe.address, inWallet)
+  //     await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR * 2, inWallet)
+  //     await stakingVe.connect(alice).ClaimMyFunds()
+  //     await increaseTimestamp(SECONDS_IN_A_DAY)
+
+  //     const balance = await stakingVe.connect(alice).GetMyBalance()
+  //     const power = await stakingVe.connect(alice).GetMyPower()
+  //     inWallet = await axialTokenMock.balanceOf(await alice.getAddress())
+  //     console.log(
+  //       "Day %d, Balance: %d Power: %d, Wallet: %d",
+  //       i,
+  //       balance,
+  //       power,
+  //       inWallet,
+  //     )
+  //   }
+  // })
 
   //it("user should be able to increase their lock duration", async () => { });
   //it("user should not be able to decrease their lock duration", async () => { });

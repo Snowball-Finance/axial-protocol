@@ -8,7 +8,7 @@ import "./libraries/SafeERC20.sol";
 import "./libraries/SafeMath.sol";
 import "./interfaces/IERC20.sol";
 
-import "hardhat/console.sol";
+//import "hardhat/console.sol";
 
 // TODO: update function comment headers to Natspec
 // TODO: Block user from creating so many locks they go over the block limit
@@ -222,25 +222,23 @@ contract StakingVe {
         LockedFunds[userAddr] += _amount;
     }
 
-    /*
     // ExtendMyLock
     // in: _index - the index of the lock from GetMyLocks to extend
     // in: _extendByDuration - number of seconds to extend the lock by
     // Extends the duration of a users lock by some amount of time
-    function ExtendMyLock(uint256 _index, uint256 _extendByDuration) external {
-        // Retried list of locks the user has already created
-        address userAddr = msg.sender;
-        LockVe[] memory preExistingLocks = Locks[userAddr];
+    // function ExtendMyLock(uint256 _index, uint256 _extendByDuration) external {
+    //     // Retried list of locks the user has already created
+    //     address userAddr = msg.sender;
+    //     LockVe[] memory preExistingLocks = Locks[userAddr];
 
-        require(_index < preExistingLocks.length, "!index"); // Todo: this line may not be needed
+    //     require(_index < preExistingLocks.length, "!index"); // Todo: this line may not be needed
 
-        // Calculate new duration via summation
-        uint256 currentDuration = Locks[userAddr][_index].EndBlockTime -
-            Locks[userAddr][_index].StartBlockTime;
-        require(currentDuration + _extendByDuration <= 104 weeks, ">2 years");
+    //     // Calculate new duration via summation
+    //     uint256 currentDuration = Locks[userAddr][_index].EndBlockTime -
+    //         Locks[userAddr][_index].StartBlockTime;
+    //     require(currentDuration + _extendByDuration <= 104 weeks, ">2 years");
 
-        // Extend the end time of the lock
-        Locks[userAddr][_index].EndBlockTime += _extendByDuration;
-    }
-    */
+    //     // Extend the end time of the lock
+    //     Locks[userAddr][_index].EndBlockTime += _extendByDuration;
+    // }
 }
