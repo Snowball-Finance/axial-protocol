@@ -12,14 +12,18 @@
             "protocol": "inspector",
             "sourceMaps": true,
             "skipFiles": [
-              "<node_internals>//*.js",
-              "${workspaceRoot}/node_modules//.js"
+                "<node_internals>/**/*.js",
+                "${workspaceRoot}/node_modules/**/*.js"
             ],
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-            "args": ["${file}"],
-            "outFiles": ["${workspaceRoot}/dist/**/.js"],
+            "args": [
+                "${file}"
+            ],
+            "outFiles": [
+                "${workspaceRoot}/out/**/*.js"
+            ],
             "cwd": "${workspaceRoot}",
             "internalConsoleOptions": "openOnSessionStart"
-          }
+        }
     ]
 }
