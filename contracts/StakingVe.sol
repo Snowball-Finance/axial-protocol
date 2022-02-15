@@ -8,6 +8,16 @@ import "./libraries/SafeERC20.sol";
 import "./libraries/SafeMath.sol";
 import "./interfaces/IERC20.sol";
 
+import "hardhat/console.sol";
+
+// TODO: update function comment headers to Natspec
+// TODO: Block user from creating so many locks they go over the block limit
+// TODO: Update contract so that only one lock ever exists per user -
+// The lock can always be extended in time or added to in tokens
+// Doing this destroys the lock and creates a new one
+// Get the users balance and apply it to the new one
+// This could be done with two methods: extendTime or addTokens
+
 contract StakingVe {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -53,7 +63,12 @@ contract StakingVe {
     // in: _name - desired name of our governance token
     // in: _symbol - desired symbol of our governance token
     // in: _governance - address of wallet which will be given adminstrative access to this contract
-    constructor(address _stakedToken, string memory _name, string memory _symbol, address _governance) public {
+    constructor(
+        address _stakedToken,
+        string memory _name,
+        string memory _symbol,
+        address _governance
+    ) public {
         Governance = _governance;
         StakedToken = _stakedToken;
         Name = _name;
@@ -62,7 +77,7 @@ contract StakingVe {
 
     // onlyGovernance ensures that a function cannot be executed by anyone other than governance
     // this can be used for adminstrative functions such as migrating users to an updated contract
-    modifier onlyGovernance {
+    modifier onlyGovernance() {
         require(msg.sender == Governance, "!governance");
         _;
     }
@@ -80,9 +95,12 @@ contract StakingVe {
             LockVe memory lock = preExistingLocks[i];
 
             if (lock.EndBlockTime > currentTimestamp) {
-                
-                uint256 granularDelta = ((lock.EndBlockTime - currentTimestamp) * InterpolationGranularity) / (lock.EndBlockTime - lock.StartBlockTime);
-                balance += lock.StartingAmountLocked * granularDelta / InterpolationGranularity;
+                uint256 granularDelta = ((lock.EndBlockTime -
+                    currentTimestamp) * InterpolationGranularity) /
+                    (lock.EndBlockTime - lock.StartBlockTime);
+                balance +=
+                    (lock.StartingAmountLocked * granularDelta) /
+                    InterpolationGranularity;
             }
         }
         return balance;
@@ -103,9 +121,15 @@ contract StakingVe {
             if (lock.EndBlockTime > currentTimestamp) {
                 // We need to accomodate for the fact that we are dealing only in whole numbers
                 // uint256 delta = (lock.EndBlockTime - currentTimestamp) / (lock.EndBlockTime - lock.StartBlockTime);
-                uint256 startingAmountAwarded = (lock.EndBlockTime - lock.StartBlockTime) * lock.StartingAmountLocked / 104 weeks;
-                uint256 granularDelta = ((lock.EndBlockTime - currentTimestamp) * InterpolationGranularity) / (lock.EndBlockTime - lock.StartBlockTime);
-                power += startingAmountAwarded * granularDelta / InterpolationGranularity;
+                uint256 startingAmountAwarded = ((lock.EndBlockTime -
+                    lock.StartBlockTime) * lock.StartingAmountLocked) /
+                    104 weeks;
+                uint256 granularDelta = ((lock.EndBlockTime -
+                    currentTimestamp) * InterpolationGranularity) /
+                    (lock.EndBlockTime - lock.StartBlockTime);
+                power +=
+                    (startingAmountAwarded * granularDelta) /
+                    InterpolationGranularity;
             }
         }
         return power;
@@ -168,8 +192,11 @@ contract StakingVe {
     // The deposit tokens and the awarded governance tokens both decay linearly over time
     // The quantity of governance tokens is defined as:
     // amountLocked * (timeRemaining / 2 years)
-    function CreateLock(uint256 _duration, uint256 _amount) external nonreentrant {
-        require(_duration <= 52 weeks, ">52 weeks");
+    function CreateLock(uint256 _duration, uint256 _amount)
+        external
+        nonreentrant
+    {
+        require(_duration <= 104 weeks, ">2 years");
 
         // Retrieve list of locks the user has already created
         address userAddr = msg.sender;
@@ -186,7 +213,7 @@ contract StakingVe {
         }
 
         // Create a new lock and append it to this users locks
-        LockVe storage newLock;
+        LockVe memory newLock;
         newLock.StartBlockTime = block.timestamp;
         newLock.EndBlockTime = newLock.StartBlockTime + _duration;
         newLock.StartingAmountLocked = _amount;
@@ -195,4 +222,25 @@ contract StakingVe {
         LockedFunds[userAddr] += _amount;
     }
 
+    /*
+    // ExtendMyLock
+    // in: _index - the index of the lock from GetMyLocks to extend
+    // in: _extendByDuration - number of seconds to extend the lock by
+    // Extends the duration of a users lock by some amount of time
+    function ExtendMyLock(uint256 _index, uint256 _extendByDuration) external {
+        // Retried list of locks the user has already created
+        address userAddr = msg.sender;
+        LockVe[] memory preExistingLocks = Locks[userAddr];
+
+        require(_index < preExistingLocks.length, "!index"); // Todo: this line may not be needed
+
+        // Calculate new duration via summation
+        uint256 currentDuration = Locks[userAddr][_index].EndBlockTime -
+            Locks[userAddr][_index].StartBlockTime;
+        require(currentDuration + _extendByDuration <= 104 weeks, ">2 years");
+
+        // Extend the end time of the lock
+        Locks[userAddr][_index].EndBlockTime += _extendByDuration;
+    }
+    */
 }
