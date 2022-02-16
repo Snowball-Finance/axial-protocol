@@ -177,7 +177,7 @@ describe("StakingVe", () => {
     await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, '10');
     await stakingVe.connect(alice).ExtendMyLock(SECONDS_IN_A_YEAR, 0);
     await expect(stakingVe.connect(alice).ExtendMyLock(100, 0)).to.be.revertedWith('>2 years');
-  });
+  })
 
   it("Balance, Power linearly decay over time and can be claimed repeatedly with lock time increasing", async () => {
 
@@ -207,7 +207,7 @@ describe("StakingVe", () => {
         await stakingVe.connect(alice).ExtendMyLock(SECONDS_IN_A_YEAR, 0);
       }
     }
-  });
+  })
 
   it("User can autocompound their lock", async () => {
     // Alice's holiday bonus
@@ -232,6 +232,58 @@ describe("StakingVe", () => {
       interest = power.div(100).toNumber(); // Let's say we make 1% of our power in gains every day 
       console.log("Day %d, Balance: %d Power: %d, Wallet: %d, Interest: %d", i, balance, power, inWallet, interest)
     }
+  })
+
+  it("User cannot decrease their lock time by means of overflow", async () => {
+    await axialTokenMock.connect(alice).approve(stakingVe.address, 10)
+    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, 10)
+    await increaseTimestamp(SECONDS_IN_A_YEAR/2)
+
+    for (let i = 0; i < 256; ++i) {
+      let extension = 2 ** i;
+
+      let lockBeforeExtension = await(stakingVe.connect(alice).GetMyLock())
+      let duration = lockBeforeExtension.EndBlockTime.toNumber() - lockBeforeExtension.StartBlockTime.toNumber();
+      if (duration + extension > SECONDS_IN_A_YEAR * 2) {
+        await expect(stakingVe.connect(alice).ExtendMyLockKeepingChange(extension, 0)).to.be.reverted
+      } else {
+        await stakingVe.connect(alice).ExtendMyLockKeepingChange(extension, 0)
+        let lockAfterExtension = await(stakingVe.connect(alice).GetMyLock())
+        expect(lockAfterExtension.EndBlockTime.toNumber()).to.be.greaterThanOrEqual(lockBeforeExtension.EndBlockTime.toNumber())
+        let years = (lockAfterExtension.EndBlockTime.toNumber() - lockAfterExtension.StartBlockTime.toNumber()) / (SECONDS_IN_A_YEAR * 2)
+        //console.log("Lock may be for %d years", years)
+      }
+    }
+  })
+
+  it("User can withdraw any unclaimed balance after their lock has expired", async () => {
+    await axialTokenMock.connect(alice).approve(stakingVe.address, 10)
+    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, 10)
+    await increaseTimestamp(SECONDS_IN_A_YEAR/2)
+    await stakingVe.connect(alice).ClaimMyFunds()
+    await increaseTimestamp(SECONDS_IN_A_YEAR)
+    await stakingVe.connect(alice).ClaimMyFunds();
+    const inWallet = await axialTokenMock.balanceOf(await alice.getAddress())
+    expect(inWallet).to.eq(10)
+  })
+
+  it("User can create a lock after their old lock has expired", async () => {
+    await axialTokenMock.connect(alice).approve(stakingVe.address, 10)
+    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, 10)
+    await increaseTimestamp(SECONDS_IN_A_YEAR/2)
+    await stakingVe.connect(alice).ClaimMyFunds()
+    await increaseTimestamp(SECONDS_IN_A_YEAR)
+    await stakingVe.connect(alice).ClaimMyFunds();
+    let inWallet = await axialTokenMock.balanceOf(await alice.getAddress())
+    expect(inWallet).to.eq(10)
+    await axialTokenMock.connect(alice).approve(stakingVe.address, 10)
+    await stakingVe.connect(alice).ExtendMyLock(SECONDS_IN_A_YEAR, 10)
+
+    let balance = await stakingVe.connect(alice).GetMyBalance();
+    let power = await stakingVe.connect(alice).GetMyPower();
+    inWallet = await axialTokenMock.balanceOf(await alice.getAddress());
+    console.log("Balance: %d Power: %d, Wallet: %d", balance, power, inWallet);
+    expect(await stakingVe.connect(alice).GetMyPower()).to.eq(5);
   })
 
 })

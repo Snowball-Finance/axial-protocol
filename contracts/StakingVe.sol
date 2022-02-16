@@ -7,6 +7,8 @@ pragma experimental ABIEncoderV2;
 /// @notice Allows you to lock tokens in exchange for governance tokens
 /// @notice Locks can be extended or deposited into
 /// @notice Maximum deposit duration is two years (104 weeks)
+/// @dev If IsUserLocked is false, call CreateLock
+/// @dev If IsUserLocked is true, call ExtendMyLock
 
 // We have to maintain old versions of this to use legacy solidity (0.6.12)
 // Otherwise it's safe to link with @OpenZeppelin/
@@ -116,6 +118,29 @@ contract StakingVe {
         return power;
     }
 
+    /// @notice Retrieve a list of all users who have ever staked
+    /// @return An array of addresses of all users who have ever staked
+    function GetAllUsers() public view returns (address[] memory) {
+        return Users;
+    }
+
+    /// @notice Check if a user has ever created a Lock in this contract
+    /// @param _userAddr Address of any user to check
+    /// @dev This may be used by the web application to determine if the UI says "Create Lock" or "Add to Lock"
+    /// @return True if the user has ever created a lock
+    function IsUserLocked(address _userAddr) public view returns (bool) {
+        LockVe memory usersLock = Locks[_userAddr];
+        return usersLock.Initalized;
+    }
+
+    /// @notice Check if invoking user has ever created a Lock in this contract
+    /// @dev This may be used by the web application to determine if the UI says "Create Lock" or "Add to Lock"
+    /// @return True if invoking user has ever created a lock
+    function AmILocked() public view returns (bool) {
+        address userAddr = msg.sender;
+        return IsUserLocked(userAddr);
+    }
+
     /// @notice View a users Lock, see also GetMyLock()
     /// @param _userAddr Address of any user to view all Locks they have ever created
     /// @dev This may be used by the web application for graphical illustration purposes
@@ -210,6 +235,9 @@ contract StakingVe {
         require(usersLock.Initalized, "!user");
 
         uint256 oldDurationRemaining = usersLock.EndBlockTime - block.timestamp;
+        if (usersLock.EndBlockTime < block.timestamp) {
+            oldDurationRemaining = 0;
+        }
         require (oldDurationRemaining + _duration <= 104 weeks, ">2 years");
 
         // Receive the users tokens
@@ -248,6 +276,9 @@ contract StakingVe {
         require(usersLock.Initalized, "!user");
 
         uint256 oldDurationRemaining = usersLock.EndBlockTime - block.timestamp;
+        if (usersLock.EndBlockTime < block.timestamp) {
+            oldDurationRemaining = 0;
+        }
         require (oldDurationRemaining + _duration <= 104 weeks, ">2 years");
 
         // Receive the users tokens
