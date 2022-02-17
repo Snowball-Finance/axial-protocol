@@ -49,17 +49,17 @@ describe("StakingVe", () => {
   // Test cases:
   it("User cannot lock for more than two years (104 weeks)", async () => {
     await axialTokenMock.connect(alice).approve(stakingVe.address, "10")
-    await expect(stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR * 2 + 1, "10")).to.be.revertedWith(">2 years")
+    await expect(stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR * 2 + 1, "10")).to.be.revertedWith(">2 years")
   })
 
   it("User cannot create lock with more tokens then they have", async () => {
     await axialTokenMock.connect(alice).approve(stakingVe.address, "11")
-    await expect(stakingVe.connect(alice).CreateLock("1000", "11")).to.be.revertedWith("!balance")
+    await expect(stakingVe.connect(alice).Stake("1000", "11")).to.be.revertedWith("!balance")
   })
 
   it("Locking 10 tokens for 2 years results in 10 governance tokens immediately and locked balance of 10", async () => {
     await axialTokenMock.connect(alice).approve(stakingVe.address, "10")
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR * 2, "10")
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR * 2, "10")
 
     expect(await stakingVe.connect(alice).GetMyBalance()).to.eq(10)
     expect(await stakingVe.connect(alice).GetMyPower()).to.eq(10)
@@ -67,7 +67,7 @@ describe("StakingVe", () => {
 
   it("10 tokens locked for two years decays to 5 tokens locked and 5 governance tokens in one year", async () => {
     await axialTokenMock.connect(alice).approve(stakingVe.address, "10")
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR * 2, "10")
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR * 2, "10")
     await increaseTimestamp(SECONDS_IN_A_YEAR)
 
     expect(await stakingVe.connect(alice).GetMyBalance()).to.eq(5)
@@ -76,7 +76,7 @@ describe("StakingVe", () => {
 
   it("10 tokens locked for two years decays to 0 tokens locked and 0 governance tokens in two years", async () => {
     await axialTokenMock.connect(alice).approve(stakingVe.address, "10")
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR * 2, "10")
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR * 2, "10")
     await increaseTimestamp(SECONDS_IN_A_YEAR * 2)
 
     expect(await stakingVe.connect(alice).GetMyBalance()).to.eq(0)
@@ -86,7 +86,7 @@ describe("StakingVe", () => {
   it("user can create a lock", async () => {
     const lock_duration = ONE_WEEK
     await axialTokenMock.connect(alice).approve(stakingVe.address, "10")
-    await stakingVe.connect(alice).CreateLock(lock_duration, "10")
+    await stakingVe.connect(alice).Stake(lock_duration, "10")
     const lock = await stakingVe.connect(alice).GetMyLock()
     expect(lock.StartingAmountLocked).to.eq(10)
     expect(lock.EndBlockTime.sub(lock.StartBlockTime)).to.eq(lock_duration)
@@ -94,21 +94,14 @@ describe("StakingVe", () => {
     expect(await axialTokenMock.balanceOf(stakingVe.address)).to.eq(10)
   })
 
-  it("user cannot create multiple locks", async () => {
-    await axialTokenMock.connect(alice).approve(stakingVe.address, "10")
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, "2")
-    await increaseTimestamp(100)
-    await expect(stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, "2")).to.be.revertedWith("!new")
-  })
-
   it("Three users who create locks for a year should have half of the locked quantity in voting power, rounded down to the nearest whole number", async () => {
     await axialTokenMock.connect(alice).approve(stakingVe.address, "10")
     await axialTokenMock.connect(bob).approve(stakingVe.address, "100")
     await axialTokenMock.connect(carol).approve(stakingVe.address, "500")
 
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, "10")
-    await stakingVe.connect(bob).CreateLock(SECONDS_IN_A_YEAR, "100")
-    await stakingVe.connect(carol).CreateLock(SECONDS_IN_A_YEAR, "500")
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR, "10")
+    await stakingVe.connect(bob).Stake(SECONDS_IN_A_YEAR, "100")
+    await stakingVe.connect(carol).Stake(SECONDS_IN_A_YEAR, "500")
 
     const alice_lock = await stakingVe.connect(alice).GetMyLock()
     const bob_lock = await stakingVe.connect(bob).GetMyLock()
@@ -131,7 +124,7 @@ describe("StakingVe", () => {
     await axialTokenMock.connect(deployer).mints([await alice.getAddress()], [90])
 
     await axialTokenMock.connect(alice).approve(stakingVe.address, "100")
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR * 2, "100")
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR * 2, "100")
 
     let balance = await stakingVe.connect(alice).GetMyBalance()
     let power = await stakingVe.connect(alice).GetMyPower()
@@ -154,8 +147,8 @@ describe("StakingVe", () => {
     await axialTokenMock.connect(alice).approve(stakingVe.address, "10")
     await axialTokenMock.connect(bob).approve(stakingVe.address, "100")
 
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR * 2, "10")
-    await stakingVe.connect(bob).CreateLock(SECONDS_IN_A_YEAR * 2, "100")
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR * 2, "10")
+    await stakingVe.connect(bob).Stake(SECONDS_IN_A_YEAR * 2, "100")
 
     await increaseTimestamp(SECONDS_IN_A_YEAR)
 
@@ -174,9 +167,9 @@ describe("StakingVe", () => {
 
   it("User can increase the duration of a pre-existing lock, up to the max duration of two years", async () => {
     await axialTokenMock.connect(alice).approve(stakingVe.address, '10');
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, '10');
-    await stakingVe.connect(alice).ExtendMyLock(SECONDS_IN_A_YEAR, 0);
-    await expect(stakingVe.connect(alice).ExtendMyLock(100, 0)).to.be.revertedWith('>2 years');
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR, '10');
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR, 0);
+    await expect(stakingVe.connect(alice).Stake(100, 0)).to.be.revertedWith('>2 years');
   })
 
   it("Balance, Power linearly decay over time and can be claimed repeatedly with lock time increasing", async () => {
@@ -185,7 +178,7 @@ describe("StakingVe", () => {
     await axialTokenMock.connect(deployer).mints([await alice.getAddress()], [90]);
 
     await axialTokenMock.connect(alice).approve(stakingVe.address, '100');
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, '100');
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR, '100');
 
     let balance = await stakingVe.connect(alice).GetMyBalance();
     let power = await stakingVe.connect(alice).GetMyPower();
@@ -204,7 +197,7 @@ describe("StakingVe", () => {
       // In 26 weeks, extend our lock by another year
       if (i == 26) {
         console.log("Extending lock by one year");
-        await stakingVe.connect(alice).ExtendMyLock(SECONDS_IN_A_YEAR, 0);
+        await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR, 0);
       }
     }
   })
@@ -213,7 +206,7 @@ describe("StakingVe", () => {
     // Alice's holiday bonus
     await axialTokenMock.connect(deployer).mints([await alice.getAddress()], [990])
     await axialTokenMock.connect(alice).approve(stakingVe.address, 1000)
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR * 2, 1000)
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR * 2, 1000)
 
     let interest = 0;
 
@@ -224,7 +217,7 @@ describe("StakingVe", () => {
 
       let dividends = await axialTokenMock.balanceOf(await alice.getAddress())
       await axialTokenMock.connect(alice).approve(stakingVe.address, dividends)
-      await stakingVe.connect(alice).ExtendMyLockKeepingChange(SECONDS_IN_A_DAY, dividends);
+      await stakingVe.connect(alice).Stake(SECONDS_IN_A_DAY, dividends);
 
       const balance = await stakingVe.connect(alice).GetMyBalance()
       const power = await stakingVe.connect(alice).GetMyPower()
@@ -236,7 +229,7 @@ describe("StakingVe", () => {
 
   it("User cannot decrease their lock time by means of overflow", async () => {
     await axialTokenMock.connect(alice).approve(stakingVe.address, 10)
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, 10)
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR, 10)
     await increaseTimestamp(SECONDS_IN_A_YEAR/2)
 
     for (let i = 0; i < 256; ++i) {
@@ -245,9 +238,9 @@ describe("StakingVe", () => {
       let lockBeforeExtension = await(stakingVe.connect(alice).GetMyLock())
       let duration = lockBeforeExtension.EndBlockTime.toNumber() - lockBeforeExtension.StartBlockTime.toNumber();
       if (duration + extension > SECONDS_IN_A_YEAR * 2) {
-        await expect(stakingVe.connect(alice).ExtendMyLockKeepingChange(extension, 0)).to.be.reverted
+        await expect(stakingVe.connect(alice).Stake(extension, 0)).to.be.reverted
       } else {
-        await stakingVe.connect(alice).ExtendMyLockKeepingChange(extension, 0)
+        await stakingVe.connect(alice).Stake(extension, 0)
         let lockAfterExtension = await(stakingVe.connect(alice).GetMyLock())
         expect(lockAfterExtension.EndBlockTime.toNumber()).to.be.greaterThanOrEqual(lockBeforeExtension.EndBlockTime.toNumber())
         let years = (lockAfterExtension.EndBlockTime.toNumber() - lockAfterExtension.StartBlockTime.toNumber()) / (SECONDS_IN_A_YEAR * 2)
@@ -258,7 +251,7 @@ describe("StakingVe", () => {
 
   it("User can withdraw any unclaimed balance after their lock has expired", async () => {
     await axialTokenMock.connect(alice).approve(stakingVe.address, 10)
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, 10)
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR, 10)
     await increaseTimestamp(SECONDS_IN_A_YEAR/2)
     await stakingVe.connect(alice).ClaimMyFunds()
     await increaseTimestamp(SECONDS_IN_A_YEAR)
@@ -269,7 +262,7 @@ describe("StakingVe", () => {
 
   it("User can create a lock after their old lock has expired", async () => {
     await axialTokenMock.connect(alice).approve(stakingVe.address, 10)
-    await stakingVe.connect(alice).CreateLock(SECONDS_IN_A_YEAR, 10)
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR, 10)
     await increaseTimestamp(SECONDS_IN_A_YEAR/2)
     await stakingVe.connect(alice).ClaimMyFunds()
     await increaseTimestamp(SECONDS_IN_A_YEAR)
@@ -277,7 +270,7 @@ describe("StakingVe", () => {
     let inWallet = await axialTokenMock.balanceOf(await alice.getAddress())
     expect(inWallet).to.eq(10)
     await axialTokenMock.connect(alice).approve(stakingVe.address, 10)
-    await stakingVe.connect(alice).ExtendMyLock(SECONDS_IN_A_YEAR, 10)
+    await stakingVe.connect(alice).Stake(SECONDS_IN_A_YEAR, 10)
 
     let balance = await stakingVe.connect(alice).GetMyBalance();
     let power = await stakingVe.connect(alice).GetMyPower();
