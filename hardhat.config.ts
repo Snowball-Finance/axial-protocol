@@ -10,7 +10,6 @@ import "hardhat-spdx-license-identifier"
 
 import { HardhatUserConfig } from "hardhat/config"
 import dotenv from "dotenv"
-import { ethers } from "ethers"
 
 dotenv.config()
 
@@ -29,7 +28,7 @@ let config: HardhatUserConfig = {
     },
     fuji: {
       url: "https://api.avax-test.network/ext/bc/C/rpc",
-      accounts: [process.env.PRIVATE_KEY ?? '']
+      accounts: [process.env.PRIVATE_KEY || ""],
     },
     mainnet: {
       url: "https://api.avax.network/ext/bc/C/rpc",
