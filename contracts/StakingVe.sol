@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.9;
 
 /// @title A vesting style staking contract with extendable linear decay
 /// @author Auroter
@@ -9,22 +8,20 @@ pragma experimental ABIEncoderV2;
 /// @notice Maximum deposit duration is two years (104 weeks)
 /// @dev Simply call stake(...) to create initial lock or extend one that already exists for the user
 
-// We have to maintain old versions of this to use legacy solidity (0.6.12)
-import "./libraries/SafeERC20.sol";
-import "./libraries/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IERC20.sol";
 
 //import "hardhat/console.sol";
 
-contract StakingVe {
-    using SafeMath for uint256;
+contract StakingVe is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     // Info pertaining to staking contract
-    address private StakedToken; // An ERC20 Token to be staked (i.e. Axial)
-    address private Governance; // Who has administrative access
-    string private Name; // New asset after staking (i.e. sAxial)
-    string private Symbol; // New asset symbol after staking (i.e. sAXIAL)
+    address public StakedToken; // An ERC20 Token to be staked (i.e. Axial)
+    string public Name; // New asset after staking (i.e. sAxial)
+    string public Symbol; // New asset symbol after staking (i.e. sAXIAL)
     uint256 private InterpolationGranularity = 1e18; // Note: ERC20.decimals() is for display and does not affect arithmetic!
 
     // Info pertaining to users
@@ -45,19 +42,6 @@ contract StakingVe {
         bool Initialized;
     }
 
-    uint8 internal constant _not_entered = 1;
-    uint8 internal constant _entered = 2;
-    uint8 internal _entered_state = 1;
-    /// @notice Protects deposit / withdraw functions from exploits
-    /// @notice Ensures a function cannot be executed again while it is still running
-    /// @dev TODO: Move this into its own contract
-    modifier nonreentrant() {
-        require(_entered_state == _not_entered);
-        _entered_state = _entered;
-        _;
-        _entered_state = _not_entered;
-    }
-
     /// @notice Constructor
     /// @param _stakedToken Address of the token our users will deposit and lock in exchange for governance tokens
     /// @param _name Desired name of our governance token
@@ -69,17 +53,10 @@ contract StakingVe {
         string memory _symbol,
         address _governance
     ) public {
-        Governance = _governance;
+        transferOwnership(_governance);
         StakedToken = _stakedToken;
         Name = _name;
         Symbol = _symbol;
-    }
-
-    /// @notice Ensures that a function cannot be executed by anyone other than governance
-    /// @dev this can be used for adminstrative functions such as migrating users to an updated contract
-    modifier onlyGovernance() {
-        require(msg.sender == Governance, "!governance");
-        _;
     }
 
     /// @notice Calculate the number of vested tokens a user has not claimed, see also: getMyUnclaimed()
@@ -192,7 +169,7 @@ contract StakingVe {
     /// @notice Transfers deposit tokens which have decayed over some portion of the lock period back to their original owner
     /// @notice It is up to the user to invoke this in order to reclaim their original deposit tokens over time
     /// @dev This will need to be called by the web application via a button or some other means
-    function claimMyFunds() external nonreentrant {
+    function claimMyFunds() external nonReentrant {
         address userAddr = msg.sender;
         uint256 totalFundsDeposited = LockedFunds[userAddr] + DeferredFunds[userAddr];
         uint256 currentBalance = getMyBalance();
@@ -208,7 +185,7 @@ contract StakingVe {
     /// @param _duration Number of seconds the invoking user will extend their lock for
     /// @param _amount Number of additional tokens to deposit into the lock
     /// @param _deferUnclaimed If True, leaves any unclaimed vested balance in the staking contract
-    function stake(uint256 _duration, uint256 _amount, bool _deferUnclaimed) public nonreentrant {
+    function stake(uint256 _duration, uint256 _amount, bool _deferUnclaimed) public nonReentrant {
         require(_duration > 0 || _amount > 0, "null");
 
         // Retrieve list of locks the user has already created
