@@ -31,6 +31,7 @@ contract StakingVe {
     address[] private Users; // An array containing all user addresses
     mapping(address => LockVe) private Locks; // A mapping of each users lock
     mapping(address => uint256) private LockedFunds; // A mapping of each users total deposited funds
+    mapping(address => uint256) private DeferredFunds; // A mapping of vested funds the user wishes to leave unclaimed
 
     // Lock structure, only one of these is allowed per user
     // A DELTA can be derived as the degree of interpolation between the start/end block:
@@ -79,6 +80,23 @@ contract StakingVe {
     modifier onlyGovernance() {
         require(msg.sender == Governance, "!governance");
         _;
+    }
+
+    /// @notice Calculate the number of vested tokens a user has not claimed, see also: getMyUnclaimed()
+    /// @param _userAddr Address of any user to view the number of vested tokens they have not yet claimed
+    /// @return Quantity of tokens which have vested but are unclaimed by the specified user
+    function getUnclaimed(address _userAddr) public view returns (uint256) {
+        uint256 totalFundsDeposited = LockedFunds[_userAddr] + DeferredFunds[_userAddr];
+        uint256 currentBalance = getMyBalance();
+        uint256 fundsToClaim = totalFundsDeposited - currentBalance;
+        return fundsToClaim;
+    }
+
+    /// @notice Calculate the number of vested tokens invoking user has not claimed, see also: getUnclaimed()
+    /// @return Quantity of tokens which have vested but are unclaimed by the invoking user
+    function getMyUnclaimed() public view returns (uint256) {
+        address userAddr = msg.sender;
+        return getUnclaimed(userAddr);
     }
 
     /// @notice Calculate the number of tokens a user still has locked, see also: getMyBalance()
@@ -176,19 +194,21 @@ contract StakingVe {
     /// @dev This will need to be called by the web application via a button or some other means
     function claimMyFunds() external nonreentrant {
         address userAddr = msg.sender;
-        uint256 totalFundsDeposited = LockedFunds[userAddr];
+        uint256 totalFundsDeposited = LockedFunds[userAddr] + DeferredFunds[userAddr];
         uint256 currentBalance = getMyBalance();
         uint256 fundsToClaim = totalFundsDeposited - currentBalance;
 
         IERC20(StakedToken).safeTransfer(userAddr, fundsToClaim);
 
         LockedFunds[userAddr] = currentBalance;
+        DeferredFunds[userAddr] = 0;
     }
 
     /// @notice Create/extend the duration of the invoking users lock and/or deposit additional tokens into it
     /// @param _duration Number of seconds the invoking user will extend their lock for
     /// @param _amount Number of additional tokens to deposit into the lock
-    function stake(uint256 _duration, uint256 _amount) public nonreentrant {
+    /// @param _deferUnclaimed If True, leaves any unclaimed vested balance in the staking contract
+    function stake(uint256 _duration, uint256 _amount, bool _deferUnclaimed) public nonreentrant {
         require(_duration > 0 || _amount > 0, "null");
 
         // Retrieve list of locks the user has already created
@@ -200,7 +220,6 @@ contract StakingVe {
         // Keep track of new user or pre-existing lockout period
         if (!usersLock.Initialized) {
             Users.push(userAddr);
-            LockedFunds[userAddr] = 0; // TODO: this line may be redundant
         } else if (block.timestamp < usersLock.EndBlockTime) {
             oldDurationRemaining = usersLock.EndBlockTime - block.timestamp;
         }
@@ -215,11 +234,14 @@ contract StakingVe {
         uint256 totalFundsDeposited = LockedFunds[userAddr];
         uint256 oldBalance = getBalance(userAddr);
         uint256 fundsUnclaimed = totalFundsDeposited - oldBalance;
-        //if (!_recycle) {
+        if (!_deferUnclaimed) {
+            fundsUnclaimed += DeferredFunds[userAddr];
             IERC20(StakedToken).safeTransfer(userAddr, fundsUnclaimed);
-            fundsUnclaimed = 0;
-        //}
-        uint256 newTotalDeposit = oldBalance + fundsUnclaimed + _amount;
+            DeferredFunds[userAddr] = 0;
+        } else {
+            DeferredFunds[userAddr] += fundsUnclaimed;
+        }
+        uint256 newTotalDeposit = oldBalance + _amount;
 
         // Update balance
         LockedFunds[userAddr] = newTotalDeposit;
