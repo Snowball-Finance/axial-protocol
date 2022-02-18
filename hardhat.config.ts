@@ -27,10 +27,11 @@ let config: HardhatUserConfig = {
       },
       deploy: ["./deploy"],
     },
-    fuji: {
-      url: "https://api.avax-test.network/ext/bc/C/rpc",
-      accounts: [process.env.PRIVATE_KEY ?? '']
-    },
+    // fuji: {
+    //   url: "https://api.avax-test.network/ext/bc/C/rpc",
+    //   accounts: [""],
+    //   deploy: ["./fuji"],
+    // },
     mainnet: {
       url: "https://api.avax.network/ext/bc/C/rpc",
       deploy: ["./deploy/mainnet/"],
